@@ -1,4 +1,5 @@
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
+import { getLatestCommitSubject } from "./commit.js";
 import { renderStatusline } from "./render.js";
 
 export function registerStatusline(pi: ExtensionAPI): void {
@@ -15,7 +16,7 @@ export function registerStatusline(pi: ExtensionAPI): void {
 						ctx,
 						theme,
 						width,
-						branch: footerData.getGitBranch(),
+						latestCommitSubject: getLatestCommitSubject(ctx.cwd),
 						extensionStatuses: footerData.getExtensionStatuses(),
 					});
 				},

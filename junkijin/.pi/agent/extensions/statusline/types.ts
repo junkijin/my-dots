@@ -11,6 +11,6 @@ export interface StatuslineRenderState {
 	ctx: ExtensionContext;
 	theme: ThemeLike;
 	width: number;
-	branch: string | null;
+	latestCommitSubject: string | null;
 	extensionStatuses: ExtensionStatusEntries;
 }

@@ -3,9 +3,9 @@ import { basename } from "node:path";
 import type { StatuslineRenderState } from "./types.js";
 import { joinNonEmpty } from "./text.js";
 
-export function renderDirectorySegment(ctx: ExtensionContext, branch: string | null): string {
+export function renderDirectorySegment(ctx: ExtensionContext, latestCommitSubject: string | null): string {
 	const dirName = basename(ctx.cwd) || ctx.cwd;
-	return branch ? `${dirName} (${branch})` : dirName;
+	return latestCommitSubject ? `${dirName} (${latestCommitSubject})` : dirName;
 }
 
 export function renderContextUsageSegment(ctx: ExtensionContext): string | null {
@@ -23,8 +23,8 @@ export function renderModelThinkingSegment(state: Pick<StatuslineRenderState, "p
 	return `${renderModelSegment(state.ctx)} (${state.pi.getThinkingLevel()})`;
 }
 
-export function renderMainLeftSegment(state: Pick<StatuslineRenderState, "ctx" | "branch">): string {
-	return renderDirectorySegment(state.ctx, state.branch);
+export function renderMainLeftSegment(state: Pick<StatuslineRenderState, "ctx" | "latestCommitSubject">): string {
+	return renderDirectorySegment(state.ctx, state.latestCommitSubject);
 }
 
 export function renderMainRightSegment(state: Pick<StatuslineRenderState, "pi" | "ctx">): string {
