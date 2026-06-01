@@ -1,6 +1,6 @@
 ---
 name: plan-mode
-description: Use when the user explicitly requests plan mode, asks for a plan before implementation, wants ambiguous requirements clarified, or asks to design/spec work before coding. The agent should explore first, ask only decision-shaping questions, avoid mutating files, and produce a decision-complete implementation plan.
+description: Use when the user explicitly requests plan mode, asks for a plan before implementation, wants ambiguous requirements clarified, or asks to design/spec work before coding. The agent should explore first, self-review ambiguity, choose sensible defaults, ask only decision-shaping questions, avoid mutating files, and produce a decision-complete implementation plan.
 ---
 
 # Plan Mode
@@ -44,6 +44,18 @@ Exception: you may ask before exploring only when the user’s prompt itself has
 
 Do not ask questions that can be answered from the repository or system.
 
+## Self-interview before asking
+
+Do not run planning as a user interview by default. Before asking the user anything, run the interview internally:
+
+1. Identify the important decisions, ambiguities, risks, dependencies, and edge cases.
+2. For each item, ask yourself the question you would normally ask the user.
+3. Answer it yourself when the repository, existing conventions, stated requirements, or a reasonable default are sufficient.
+4. Explore more when doing so would resolve the question better than asking the user.
+5. Record chosen defaults as assumptions instead of turning them into questions.
+
+Only surface a direct question when the answer would materially change the plan and cannot be safely inferred. When you do ask, provide concrete options and a recommended default.
+
 ## Evidence-based delta diagnosis
 
 Treat plans as diagnosis, not translation. When a target state exists (for example a design, spec, issue, screenshot, reference implementation, or prior behavior), do not simply restate the target as planned work.
@@ -82,7 +94,7 @@ A good plan reduces work by eliminating non-deltas; it does not expand work by r
 
 ## Phase 2: Clarify intent
 
-Keep clarifying until you can state:
+Keep resolving ambiguity until you can state:
 
 - Goal and success criteria
 - Audience or user impact
@@ -91,7 +103,7 @@ Keep clarifying until you can state:
 - Current state
 - Key preferences or tradeoffs
 
-If a high-impact ambiguity remains, ask before finalizing the plan.
+If a high-impact ambiguity remains after exploration and self-interview, ask before finalizing the plan.
 
 ## Phase 3: Clarify implementation shape
 
@@ -137,7 +149,7 @@ If the user does not answer and it is safe to proceed, use the recommended defau
 
 ## Asking questions
 
-Ask only questions that materially affect the plan, confirm an important assumption, or choose between meaningful tradeoffs.
+Ask only questions that materially affect the plan, confirm an important assumption, or choose between meaningful tradeoffs after exploration and self-interview have failed to resolve them.
 
 Good questions:
 
@@ -174,7 +186,7 @@ For straightforward changes, keep the structure compact:
 3. Test Plan
 4. Assumptions
 
-Do not ask “should I proceed?” at the end of the final plan. The user can request implementation separately.
+Do not ask “should I proceed?” at the end of the final plan. The user can request implementation separately. It is acceptable to ask the user to correct assumptions, decisions, or scope details if they want changes before implementation.
 
 ## Output style
 
