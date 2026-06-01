@@ -1,0 +1,12 @@
+vim.lsp.enable({
+	"cssls",
+	"denols",
+	"eslint",
+	"gopls",
+	"jsonls",
+	"ruby_lsp",
+	"tailwindcss",
+	"vtsls",
+	"yamlls",
+	"zls",
+})
