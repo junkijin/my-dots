@@ -1,7 +1,7 @@
 import { execFileSync } from "node:child_process";
 import { compactWhitespace } from "./text.js";
 
-const MAX_COMMIT_SUBJECT_CHARACTERS = 40;
+const MAX_COMMIT_SUBJECT_CHARACTERS = 30;
 const ELLIPSIS = "…";
 const CACHE_TTL_MS = 1000;
 
