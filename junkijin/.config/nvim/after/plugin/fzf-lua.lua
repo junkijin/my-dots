@@ -1,4 +1,3 @@
-vim.keymap.set("n", "+", "<Cmd>FzfLua buffers<CR>")
 vim.keymap.set("n", "<leader>f", "<Cmd>FzfLua files<CR>")
 vim.keymap.set("n", "<leader>g", "<Cmd>FzfLua live_grep<CR>")
 
