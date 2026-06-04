@@ -30,6 +30,7 @@ require("lualine").setup({
 				"diagnostics",
 				symbols = { error = "", warn = "", info = "", hint = "" },
 			},
+			"encoding",
 		},
 		lualine_y = {
 			"%l:%v",
@@ -39,6 +40,7 @@ require("lualine").setup({
 	extensions = {
 		"fzf",
 		"man",
+		"oil",
 		"quickfix",
 	},
 })
