@@ -1,3 +1,8 @@
+vim.opt.autoindent = false
+vim.opt.smartindent = false
+vim.opt.cindent = false
+vim.cmd("filetype indent off")
+
 vim.api.nvim_create_autocmd("FileType", {
 	callback = function(args)
 		vim.bo[args.buf].indentexpr = ""

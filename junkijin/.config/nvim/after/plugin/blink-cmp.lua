@@ -1,3 +1,5 @@
+vim.opt.completeopt:append("fuzzy")
+
 require("blink.cmp").setup({
 	keymap = {
 		preset = "default",

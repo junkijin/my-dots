@@ -1,7 +1,3 @@
-vim.diagnostic.config({
-	signs = false,
-})
-
 local ignored_lsp_progress_clients = {
 	["null-ls"] = true,
 }
