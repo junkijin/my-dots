@@ -1,15 +1,3 @@
-if vim.pack == nil then
-	error("This Neovim config requires vim.pack, which is available in Neovim 0.12+.")
-end
-
-local gh = function(repo)
-	return "https://github.com/" .. repo
-end
-
-local cb = function(repo)
-	return "https://codeberg.org/" .. repo
-end
-
 local treesitter_parsers = {
 	"bash",
 	"comment",
@@ -94,29 +82,7 @@ vim.api.nvim_create_autocmd("PackChanged", {
 })
 
 vim.pack.add({
-	gh("sainnhe/gruvbox-material"),
-	gh("tpope/vim-repeat"),
-	gh("wellle/targets.vim"),
-	gh("haya14busa/vim-asterisk"),
-	cb("andyg/leap.nvim"),
-	gh("nvim-tree/nvim-web-devicons"),
-	gh("nvim-lualine/lualine.nvim"),
-	gh("ibhagwan/fzf-lua"),
-	gh("stevearc/oil.nvim"),
-	{ src = gh("nvim-treesitter/nvim-treesitter"), version = "main" },
-	gh("RRethy/nvim-treesitter-endwise"),
-	gh("windwp/nvim-ts-autotag"),
-	{ src = gh("saghen/blink.cmp"), version = vim.version.range("1.*") },
-	gh("neovim/nvim-lspconfig"),
-	gh("stevearc/conform.nvim"),
-	gh("NMAC427/guess-indent.nvim"),
-	gh("nvimdev/indentmini.nvim"),
-	gh("windwp/nvim-autopairs"),
-	gh("kylechui/nvim-surround"),
-	gh("kevinhwang91/nvim-bqf"),
-	gh("folke/persistence.nvim"),
-	gh("mrjones2014/smart-splits.nvim"),
-	gh("tpope/vim-fugitive"),
+	{ src = "https://github.com/nvim-treesitter/nvim-treesitter", version = "main" },
 }, {
 	load = true,
 	confirm = false,
