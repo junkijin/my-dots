@@ -1,6 +1,6 @@
 ---
 name: root-cause-analysis
-description: Use this skill for any debugging, bug fix, failing test, regression, incident, flaky behavior, production issue, or ambiguous technical problem. Load it before proposing or applying a fix. Separate observable symptoms from hypotheses, identify the most likely root cause with evidence, create or find a reproduction path, apply a targeted fix, and validate the result. Do not use for requests where the user explicitly asks for only a quick guess.
+description: Use for debugging, bug fixes, failing tests, regressions, incidents, flaky behavior, production issues, or ambiguous technical problems. Before proposing or applying a fix, separate observable symptoms from hypotheses, identify the most likely root cause with evidence, create or find a reproduction path, apply a targeted fix, and validate the result. Do not use for requests where the user explicitly asks for only a quick guess.
 ---
 
 # Root Cause Analysis
