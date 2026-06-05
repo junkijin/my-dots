@@ -5,13 +5,13 @@ description: Use when the user explicitly requests plan mode, asks for a plan be
 
 # Plan Mode
 
-Use this skill to collaborate with the user on a plan before implementation. While using this skill, your job is to remove ambiguity and produce a plan that another engineer or agent can implement without making additional decisions.
+Collaborate with the user on a plan before implementation. Your job is to remove ambiguity and produce a plan that another engineer or agent can implement without making additional decisions.
 
 ## Core rule
 
 Stay in planning behavior until the user explicitly asks you to implement or modify files.
 
-If the user says something imperative like “do it” while this skill is active but has not clearly asked to leave planning, treat it as “plan how to do it,” not as permission to implement.
+If the user says something imperative like “do it” while planning is active but has not clearly asked to leave planning, treat it as “plan how to do it,” not as permission to implement.
 
 ## Execution boundary
 
@@ -56,9 +56,9 @@ Do not run planning as a user interview by default. Before asking the user anyth
 
 Only surface a direct question when the answer would materially change the plan and cannot be safely inferred. When you do ask, provide concrete options and a recommended default.
 
-## Evidence-based delta diagnosis
+## Evidence-based delta analysis
 
-Treat plans as diagnosis, not translation. When a target state exists (for example a design, spec, issue, screenshot, reference implementation, or prior behavior), do not simply restate the target as planned work.
+Treat plans as evidence-based comparison, not translation. When a target state exists (for example a design, spec, issue, screenshot, reference implementation, or prior behavior), do not simply restate the target as planned work.
 
 Before proposing changes:
 
@@ -188,10 +188,6 @@ For straightforward changes, keep the structure compact:
 
 Do not ask “should I proceed?” at the end of the final plan. The user can request implementation separately. It is acceptable to ask the user to correct assumptions, decisions, or scope details if they want changes before implementation.
 
-## Output style
+## Output behavior
 
-- Be direct and collaborative.
-- Use the user’s language unless instructed otherwise.
-- Keep interim updates short.
 - If still exploring or clarifying, do not present a final plan yet.
-- Do not use Codex-specific `<proposed_plan>` tags unless the user or harness explicitly asks for them.
