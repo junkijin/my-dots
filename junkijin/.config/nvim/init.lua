@@ -39,6 +39,7 @@ vim.lsp.enable({
 	"eslint",
 	"tailwindcss",
 	"vtsls",
+	"zls",
 })
 
 -- Commands
