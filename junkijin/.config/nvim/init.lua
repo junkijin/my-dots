@@ -3,11 +3,6 @@ vim.loader.enable()
 -- Bootstrap
 vim.g.mapleader = " "
 
-vim.g.loaded_ruby_provider = 0
-vim.g.loaded_node_provider = 0
-vim.g.loaded_perl_provider = 0
-vim.g.loaded_python3_provider = 0
-
 -- Options
 vim.opt.termguicolors = true
 vim.opt.updatetime = 256
@@ -22,7 +17,6 @@ vim.opt.smartcase = true
 vim.opt.swapfile = false
 vim.opt.writebackup = false
 vim.opt.number = true
-vim.opt.relativenumber = true
 vim.opt.signcolumn = "number"
 vim.opt.background = "dark"
 vim.opt.showtabline = 0
@@ -42,16 +36,9 @@ vim.diagnostic.config({
 })
 
 vim.lsp.enable({
-	"cssls",
-	"denols",
 	"eslint",
-	"gopls",
-	"jsonls",
-	"ruby_lsp",
 	"tailwindcss",
 	"vtsls",
-	"yamlls",
-	"zls",
 })
 
 -- Commands

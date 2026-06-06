@@ -16,14 +16,6 @@ return {
 		vtsls = {
 			enableMoveToFileCodeAction = true,
 			autoUseWorkspaceTsdk = true,
-			tsserver = {
-				globalPlugins = {
-					{
-						name = "@styled/typescript-styled-plugin",
-						enableForWorkspaceTypeScriptVersions = true,
-					},
-				},
-			},
 		},
 	},
 }
