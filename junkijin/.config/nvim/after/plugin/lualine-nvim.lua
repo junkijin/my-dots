@@ -1,7 +1,9 @@
 require("lualine").setup({
 	options = {
+		icons_enabled = false,
 		component_separators = "",
 		section_separators = "",
+		always_show_tabline = false,
 		globalstatus = true,
 	},
 	sections = {
@@ -31,15 +33,23 @@ require("lualine").setup({
 				symbols = { error = "", warn = "", info = "", hint = "" },
 			},
 			"encoding",
+			"fileformat",
 		},
 		lualine_y = {
 			"%l:%v",
 		},
 		lualine_z = {},
 	},
+	tabline = {
+		lualine_a = {
+			{
+				"tabs",
+				mode = 1,
+			},
+		},
+	},
 	extensions = {
 		"fzf",
-		"man",
 		"oil",
 		"quickfix",
 	},

@@ -36,6 +36,7 @@ vim.diagnostic.config({
 })
 
 vim.lsp.enable({
+	"elixirls",
 	"eslint",
 	"tailwindcss",
 	"vtsls",
