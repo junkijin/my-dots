@@ -86,6 +86,10 @@
       "rev": "77e97061d6691637a034258cc415d98670698459",
       "src": "https://github.com/haya14busa/vim-asterisk"
     },
+    "vim-elixir": {
+      "rev": "6dff29176eb35e025bc94b262bf6d4e517e11f7d",
+      "src": "https://github.com/elixir-editors/vim-elixir.git"
+    },
     "vim-fugitive": {
       "rev": "3b753cf8c6a4dcde6edee8827d464ba9b8c4a6f0",
       "src": "https://github.com/tpope/vim-fugitive"
