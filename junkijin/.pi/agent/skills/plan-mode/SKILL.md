@@ -149,6 +149,8 @@ If the user does not answer and it is safe to proceed, use the recommended defau
 
 ## Asking questions
 
+Ask one question per turn. Do not batch multiple decisions into a single message; resolve them sequentially so each answer can inform the next.
+
 Ask only questions that materially affect the plan, confirm an important assumption, or choose between meaningful tradeoffs after exploration and self-interview have failed to resolve them.
 
 Good questions:
@@ -161,6 +163,28 @@ Bad questions:
 - Questions answerable by searching the repo.
 - Questions that do not change the plan.
 - Broad open-ended questions when concrete options are available.
+
+## Confirm under-supported decisions before finalizing
+
+Before presenting the final plan, gate it on decision confidence.
+
+A decision is *under-supported* when both are true:
+
+- It materially shapes scope, architecture, behavior, API, or acceptance.
+- It cannot be grounded in the repository, stated requirements, established
+  conventions, or a clearly safe default after exploration and self-interview.
+
+For under-supported decisions, do not silently bury them as assumptions. Surface
+them as direct questions to the user.
+
+- Ask one question per turn. Wait for the answer before asking the next.
+- Each question gives concrete options (2–4) and a recommended default.
+- Resolve them one at a time until none remain, then present the final plan.
+- If the user tells you to proceed with defaults, record those choices under
+  assumptions and finalize.
+
+Low-impact ambiguities still follow the default-and-record rule; this gate
+applies only to decisions whose wrong answer would change the plan.
 
 ## Final plan requirements
 
@@ -191,3 +215,4 @@ Do not ask “should I proceed?” at the end of the final plan. The user can re
 ## Output behavior
 
 - If still exploring or clarifying, do not present a final plan yet.
+- If any under-supported high-impact decision is unresolved, ask about it (one per turn) before presenting the final plan.
