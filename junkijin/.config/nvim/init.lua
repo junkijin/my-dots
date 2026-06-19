@@ -26,7 +26,6 @@ vim.opt.grepformat = "%f:%l:%c:%m"
 vim.opt.pumheight = 10
 vim.opt.pumwidth = 32
 vim.opt.splitright = true
-vim.opt.list = false
 vim.opt.title = true
 vim.opt.titlestring = '%t%( %M%)%( (%{expand("%:~:.:h")})%)'
 
