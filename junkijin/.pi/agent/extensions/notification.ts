@@ -118,6 +118,19 @@ function findLastAssistantMessage(messages: unknown[]): AssistantMessage | undef
 	return undefined;
 }
 
+function getAssistantText(message: AssistantMessage): string {
+	return message.content
+		.filter((content) => content.type === "text")
+		.map((content) => content.text)
+		.join("");
+}
+
+function getNotificationDescription(message: AssistantMessage): string {
+	const chars = Array.from(getAssistantText(message));
+	const preview = chars.slice(0, 30).join("");
+	return chars.length > 30 ? `${preview}...` : preview;
+}
+
 function isRetryableError(message: AssistantMessage, contextWindow: number | undefined): boolean {
 	if (message.stopReason !== "error" || !message.errorMessage) {
 		return false;
@@ -137,8 +150,8 @@ export default function (pi: ExtensionAPI) {
 		retryableErrorCount = 0;
 	};
 
-	const notifyAgentDone = () => {
-		notify("Pi", "I'm waiting for your response!");
+	const notifyAgentDone = (message: AssistantMessage) => {
+		notify("Pi need your attention", getNotificationDescription(message));
 	};
 
 	pi.on("session_start", resetRetryState);
@@ -179,11 +192,11 @@ export default function (pi: ExtensionAPI) {
 			}
 
 			resetRetryState();
-			notifyAgentDone();
+			notifyAgentDone(lastAssistant);
 			return;
 		}
 
 		resetRetryState();
-		notifyAgentDone();
+		notifyAgentDone(lastAssistant);
 	});
 }

@@ -13,6 +13,8 @@ Stay in planning behavior until the user explicitly asks you to implement or mod
 
 A final plan is a selected execution path, not a menu of options. Planning should close material decisions before implementation.
 
+A final plan must be executor-invariant: two competent engineers or agents following the same plan should produce materially the same result. If different implementers could reasonably choose different architectures, APIs, file locations, behavior, edge-case handling, rollout steps, or tests from the plan, the plan is not final yet.
+
 If the user says something imperative like “do it” while planning is active but has not clearly asked to leave planning, treat it as “plan how to do it,” not as permission to implement.
 
 ## Execution boundary
@@ -120,6 +122,8 @@ Before finalizing, make the plan decision complete. Resolve:
 
 Resolve competing implementation approaches into one selected approach before finalizing. Use repository evidence, stated requirements, established conventions, and safe defaults where sufficient. Ask the user only when the choice materially changes the outcome and cannot be safely inferred.
 
+For every material implementation decision, record the final choice in a way that removes executor discretion. Include enough detail that the implementer knows what to do, not merely what to consider.
+
 ## Handling unknowns
 
 Treat unknowns differently depending on type.
@@ -214,7 +218,16 @@ the implementer to decide between.
 
 ## Final plan requirements
 
-Only provide the final plan when it is decision complete and commits to exactly one selected implementation approach. The implementer should not need to choose architecture, API shape, edge-case behavior, tests, or between alternative implementation paths.
+Only provide the final plan when it is decision complete, executor-invariant, and commits to exactly one selected implementation approach. The implementer should not need to choose architecture, API shape, file placement, naming strategy, edge-case behavior, tests, rollout, or between alternative implementation paths.
+
+Before emitting the final plan, perform this final-plan check internally:
+
+- Could two implementers produce meaningfully different results while both following this plan?
+- Does any step say or imply “decide”, “choose”, “consider”, “maybe”, “if appropriate”, “as needed”, or “etc.” for a material implementation detail?
+- Are any important file locations, interfaces, data flows, behavior rules, or validation steps underspecified?
+- Are assumptions/defaults explicit enough that they become decisions rather than hidden choices?
+
+If any answer indicates remaining discretion, resolve it through repository evidence, a safe default, or a user question before presenting the final plan.
 
 The plan should be concise by default and include:
 
@@ -227,19 +240,28 @@ The plan should be concise by default and include:
 - Failure behavior, privacy, or security considerations when relevant
 - Test plan and acceptance scenarios
 - Explicit assumptions/defaults chosen
+- Final decisions: the selected architecture, behavior, API/interface shape, file ownership/location, edge-case handling, validation strategy, and any rejected material alternatives when relevant
 
 For target-state, UI, or design-driven plans, also include the evidence inspected, already-matching areas, verified deltas, non-blocking unresolved scope, and unavailable evidence when those details materially affect confidence without leaving implementation choices open.
 
 Prefer behavior-level descriptions over long file-by-file inventories. Mention file paths only when they prevent ambiguity.
 
-For straightforward changes, keep the structure compact:
+For straightforward changes, keep the structure compact while still including decisions:
 
 1. Summary
-2. Key Changes
-3. Test Plan
-4. Assumptions
+2. Final Decisions
+3. Key Changes
+4. Test Plan
+5. Assumptions
 
 Do not ask “should I proceed?” at the end of the final plan. The user can request implementation separately. It is acceptable to ask the user to correct assumptions, decisions, or scope details if they want changes before implementation.
+
+Avoid final-plan language that delegates material choices to the implementer. Replace vague instructions with selected decisions, for example:
+
+- Bad: “Use the existing pattern where appropriate.”
+- Good: “Place the new parser in `src/shared/lib/parser.ts` and export it from `src/shared/lib/index.ts`, matching the existing shared-lib public API pattern.”
+- Bad: “Add tests as needed.”
+- Good: “Add unit tests for success, invalid input, empty input, and network-failure cases in `src/foo/__tests__/bar.test.ts`.”
 
 ## Output behavior
 
