@@ -154,6 +154,36 @@ function notifyWarningOnce(ctx: ExtensionContext, key: string, message: string):
 	}
 }
 
+const SYSTEM_PROMPT_SECTION_MARKERS = [
+	"\n\n<project_context>",
+	"\n\nThe following skills provide specialized instructions",
+	"\nCurrent date:",
+];
+
+function insertAfterAppendSystemPrompt(
+	systemPrompt: string,
+	appendSystemPrompt: string | undefined,
+	additionalPrompt: string,
+): string {
+	if (!appendSystemPrompt) {
+		return [systemPrompt, additionalPrompt].join("\n\n");
+	}
+
+	const appendIndex = systemPrompt.lastIndexOf(appendSystemPrompt);
+	if (appendIndex === -1) {
+		return [systemPrompt, additionalPrompt].join("\n\n");
+	}
+
+	const searchStart = appendIndex + appendSystemPrompt.length;
+	const nextSectionIndex = SYSTEM_PROMPT_SECTION_MARKERS
+		.map((marker) => systemPrompt.indexOf(marker, searchStart))
+		.filter((index) => index !== -1)
+		.sort((a, b) => a - b)[0];
+	const insertAt = nextSectionIndex ?? searchStart;
+
+	return `${systemPrompt.slice(0, insertAt)}\n\n${additionalPrompt}${systemPrompt.slice(insertAt)}`;
+}
+
 async function loadModelPromptFiles(rootDir: string, ctx: ExtensionContext): Promise<ModelPromptFile[]> {
 	let entries;
 	try {
@@ -213,7 +243,11 @@ export default function modelPromptsExtension(pi: ExtensionAPI) {
 		if (matchedBodies.length === 0) return undefined;
 
 		return {
-			systemPrompt: [event.systemPrompt, ...matchedBodies].join("\n\n"),
+			systemPrompt: insertAfterAppendSystemPrompt(
+				event.systemPrompt,
+				event.systemPromptOptions.appendSystemPrompt,
+				matchedBodies.join("\n\n"),
+			),
 		};
 	});
 }
