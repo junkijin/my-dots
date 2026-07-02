@@ -1,6 +1,7 @@
 import { getAgentDir, type ExtensionAPI, type ExtensionContext } from "@earendil-works/pi-coding-agent";
 import { readdir, readFile } from "node:fs/promises";
 import { join, resolve } from "node:path";
+import { appendPrompt, buildSystemPrompt } from "./system-prompt.ts";
 
 const MODEL_PROMPTS_DIR = "model-prompts";
 
@@ -154,15 +155,6 @@ function notifyWarningOnce(ctx: ExtensionContext, key: string, message: string):
 	}
 }
 
-const SKILLS_SECTION_ANCHOR = "\n\n\nThe following skills provide specialized instructions for specific tasks.";
-
-function insertBeforeSkillsSection(systemPrompt: string, additionalPrompt: string): string {
-	const anchorIndex = systemPrompt.indexOf(SKILLS_SECTION_ANCHOR);
-	if (anchorIndex === -1) return [systemPrompt, additionalPrompt].join("\n\n");
-
-	return `${systemPrompt.slice(0, anchorIndex)}\n\n${additionalPrompt}${systemPrompt.slice(anchorIndex)}`;
-}
-
 async function loadModelPromptFiles(rootDir: string, ctx: ExtensionContext): Promise<ModelPromptFile[]> {
 	let entries;
 	try {
@@ -196,33 +188,38 @@ async function loadModelPromptFiles(rootDir: string, ctx: ExtensionContext): Pro
 	return prompts;
 }
 
-export default function modelPromptsExtension(pi: ExtensionAPI) {
+export default function systemPromptOverridesExtension(pi: ExtensionAPI) {
 	pi.on("before_agent_start", async (event, ctx) => {
-		const model = ctx.model;
-		if (!model) return undefined;
-
-		const modelKey = `${model.provider}/${model.id}`;
-		const roots = [resolve(getAgentDir(), MODEL_PROMPTS_DIR)];
-
-		if (ctx.isProjectTrusted()) {
-			roots.push(resolve(ctx.cwd, ".pi", MODEL_PROMPTS_DIR));
-		}
-
 		const matchedBodies: string[] = [];
+		const model = ctx.model;
 
-		for (const root of roots) {
-			const promptFiles = await loadModelPromptFiles(root, ctx);
-			for (const promptFile of promptFiles) {
-				if (promptFile.models.includes(modelKey)) {
-					matchedBodies.push(promptFile.body);
+		if (model) {
+			const modelKey = `${model.provider}/${model.id}`;
+			const roots = [resolve(getAgentDir(), MODEL_PROMPTS_DIR)];
+
+			if (ctx.isProjectTrusted()) {
+				roots.push(resolve(ctx.cwd, ".pi", MODEL_PROMPTS_DIR));
+			}
+
+			for (const root of roots) {
+				const promptFiles = await loadModelPromptFiles(root, ctx);
+				for (const promptFile of promptFiles) {
+					if (promptFile.models.includes(modelKey)) {
+						matchedBodies.push(promptFile.body);
+					}
 				}
 			}
 		}
 
-		if (matchedBodies.length === 0) return undefined;
+		const additionalPrompt = matchedBodies.join("\n\n");
 
 		return {
-			systemPrompt: insertBeforeSkillsSection(event.systemPrompt, matchedBodies.join("\n\n")),
+			systemPrompt: buildSystemPrompt({
+				...event.systemPromptOptions,
+				appendSystemPrompt: additionalPrompt
+					? appendPrompt(event.systemPromptOptions.appendSystemPrompt, additionalPrompt)
+					: event.systemPromptOptions.appendSystemPrompt,
+			}),
 		};
 	});
 }
