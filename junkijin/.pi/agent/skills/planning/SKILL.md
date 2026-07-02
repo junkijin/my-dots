@@ -1,6 +1,6 @@
 ---
 name: planning
-description: Use when the user explicitly requests plan mode, asks for a plan before implementation, wants ambiguous requirements clarified, or asks to design/spec work before coding. The agent should explore first, self-review ambiguity, choose sensible defaults, ask only decision-shaping questions, avoid mutating files, and produce a decision-complete implementation plan.
+description: Use when the user asks to plan before coding, clarify ambiguous requirements, or design/spec work. Explore first, avoid file mutations, resolve key decisions with safe defaults or focused questions, then provide one decision-complete implementation plan.
 ---
 
 # Plan Mode
