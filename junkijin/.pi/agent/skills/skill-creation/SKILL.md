@@ -7,6 +7,20 @@ description: Use when the user asks to create, write, improve, refine, or review
 
 > How to write skills that are well-scoped and calibrated to the task.
 
+## Documentation index
+
+Fetch the complete documentation index at: https://agentskills.io/llms.txt
+
+Use this file to discover all available pages before exploring further.
+
+## Format specification
+
+Read [references/specification.md](references/specification.md) when you need the exact Agent Skills format rules: directory structure, `SKILL.md` frontmatter fields (`name`, `description`, `license`, `compatibility`, `metadata`, `allowed-tools`) and their constraints, optional directories (`scripts/`, `references/`, `assets/`), progressive disclosure limits, and validation with `skills-ref`.
+
+## Optimizing descriptions
+
+Read [references/optimizing-descriptions.md](references/optimizing-descriptions.md) when writing or refining a skill's `description` so it triggers reliably: description-writing principles, designing trigger eval queries (should-trigger and near-miss negatives), measuring trigger rates, train/validation splits, and the description optimization loop.
+
 ## Start from real expertise
 
 A common pitfall in skill creation is asking an LLM to generate a skill without providing domain-specific context — relying solely on the LLM's general training knowledge. The result is vague, generic procedures ("handle errors appropriately," "follow best practices for authentication") rather than the specific API patterns, edge cases, and project conventions that make a skill valuable.
@@ -275,4 +289,4 @@ For more on designing and bundling scripts, see [Using scripts in skills](/skill
 Once you have a working skill, two guides can help you refine it further:
 
 * **[Evaluating skill output quality](/skill-creation/evaluating-skills)** — Set up test cases, grade results, and iterate systematically.
-* **[Optimizing skill descriptions](/skill-creation/optimizing-descriptions)** — Test and improve your skill's `description` field so it triggers on the right prompts.
+* **[Optimizing skill descriptions](references/optimizing-descriptions.md)** — Test and improve your skill's `description` field so it triggers on the right prompts.
