@@ -1,100 +1,64 @@
 ---
 name: planning
-description: Use when the user asks to plan before coding, clarify ambiguous requirements, or design/spec work. Explore first, avoid file mutations, resolve key decisions with safe defaults or focused questions, then provide one decision-complete implementation plan.
+description: Use when the user asks to plan before coding, clarify ambiguous requirements, design or spec work, or review and revise an existing implementation plan.
 ---
 
 # Plan Mode
 
-Collaborate with the user on a plan before implementation. Your job is to remove ambiguity and produce a plan that another engineer or agent can implement without making additional decisions.
+Collaborate with the user on a plan before implementation. Remove ambiguity and produce a plan that another engineer or agent can implement without making additional decisions.
+
+## Workflow
+
+Progress:
+
+- [ ] 1. Explore the environment (non-mutating) before asking the user anything
+- [ ] 2. Self-interview; resolve what you can, record defaults as assumptions
+- [ ] 3. Ask surviving material questions, one per turn
+- [ ] 4. Run the final-plan check
+- [ ] 5. Write or update `.pi/plans/plan-*.md`; reply with the file path and a summary
 
 ## Core rule
 
-Stay in planning behavior until the user explicitly asks you to implement or modify files.
-
-A final plan is a selected execution path, not a menu of options. Planning should close material decisions before implementation.
-
-A final plan must be executor-invariant: two competent engineers or agents following the same plan should produce materially the same result. If different implementers could reasonably choose different architectures, APIs, file locations, behavior, edge-case handling, rollout steps, or tests from the plan, the plan is not final yet.
-
-If the user says something imperative like “do it” while planning is active but has not clearly asked to leave planning, treat it as “plan how to do it,” not as permission to implement.
+Stay in planning behavior until the user explicitly asks you to implement or modify files. Writing or updating the planning artifact under the project's `.pi/plans/plan-*.md` is allowed during planning and does not count as implementation.
 
 ## Execution boundary
 
 You may perform non-mutating exploration that improves the plan. Do not perform mutating implementation work.
 
-Allowed examples:
+Allowed:
 
 - Read and search files, configs, schemas, types, manifests, docs, tests, and logs.
 - Inspect likely entrypoints and current implementation shape.
-- Run commands that only gather information.
-- Run dry-run style checks when they do not edit repo-tracked files.
-- Run tests/builds/checks only when their purpose is feasibility validation and they do not modify repo-tracked files. Build artifacts or caches are acceptable if expected.
+- Run commands that only gather information, including dry-run style checks.
+- Run tests/builds/checks for feasibility validation when they do not modify repo-tracked files. Build artifacts or caches are acceptable if expected.
+- Create or update the plan document at `.pi/plans/plan-*.md`, creating the `.pi/plans` directory when needed.
 
-Not allowed examples:
+Not allowed:
 
-- Edit, write, or delete files.
-- Apply patches.
+- Edit, write, delete, or patch implementation files (source code, config, tests, generated files).
 - Run formatters, linters, migrations, codegen, or snapshot acceptance that rewrites repo-tracked files.
 - Execute commands whose purpose is to carry out the implementation rather than refine the plan.
 
-When in doubt, ask: “Is this doing the work, or learning enough to plan the work?” If it is doing the work, do not do it.
+When in doubt, ask: "Is this doing the work, or learning enough to plan the work?" If it is doing the work, do not do it.
 
 ## Phase 1: Ground in the environment
 
-Explore first, ask second.
+Explore first, ask second. Before asking the user a question, do at least one targeted non-mutating exploration pass when a local environment is available. Do not ask questions that can be answered from the repository or system.
 
-Before asking the user a question, do at least one targeted non-mutating exploration pass when a local environment is available. Search relevant files, inspect likely entrypoints, and confirm the current architecture.
+Exception: you may ask before exploring only when the user's prompt itself has obvious contradictions or cannot be scoped at all without user intent.
 
-Exception: you may ask before exploring only when the user’s prompt itself has obvious contradictions or cannot be scoped at all without user intent.
+### Self-interview before asking
 
-Do not ask questions that can be answered from the repository or system.
-
-## Self-interview before asking
-
-Do not run planning as a user interview by default. Before asking the user anything, run the interview internally:
+Do not run planning as a user interview. Before asking the user anything:
 
 1. Identify the important decisions, ambiguities, risks, dependencies, and edge cases.
-2. For each item, ask yourself the question you would normally ask the user.
-3. Answer it yourself when the repository, existing conventions, stated requirements, or a reasonable default are sufficient.
+2. For each, ask yourself the question you would normally ask the user.
+3. Answer it yourself when the repository, existing conventions, stated requirements, or a reasonable default are sufficient; record chosen defaults as assumptions.
 4. Explore more when doing so would resolve the question better than asking the user.
-5. Record chosen defaults as assumptions instead of turning them into questions.
 
-Only surface a direct question when the answer would materially change the plan and cannot be safely inferred. When you do ask, provide concrete options and a recommended default.
+### Planning against a target state
 
-## Evidence-based delta analysis
-
-Treat plans as evidence-based comparison, not translation. When a target state exists (for example a design, spec, issue, screenshot, reference implementation, or prior behavior), do not simply restate the target as planned work.
-
-Before proposing changes:
-
-1. Identify the target behavior, visual state, or contract.
-2. Inspect the current implementation and real usage sites.
-3. Compare target vs. current state.
-4. Extract only verified deltas.
-5. Prefer the smallest sufficient change set.
-
-Explicitly separate:
-
-- What already matches and should remain unchanged
-- What differs and where it lives
-- What is uncertain or unavailable from the inspected evidence
-- What decisions still affect the scope
-
-For UI or design-to-code planning, inspect the full styling and behavior resolution path when relevant:
-
-- Page or usage site
-- Feature/widget component
-- Shared wrapper component
-- Primitive/base component
-- Variants and design-system tokens
-- Icon rendering behavior
-- Class/style merging utilities
-- Relevant states such as empty, focused, disabled, loading, selected, error, and overflow
-
-If the inspected target covers only one state, do not assume adjacent states are in scope. Ask a scope-setting question when that decision changes the plan.
-
-Prefer a compact delta table when useful: Target / Current / Verified difference / Code location / Proposed change.
-
-A good plan reduces work by eliminating non-deltas; it does not expand work by restating the target.
+When a target state exists (design, spec, issue, screenshot, reference implementation, or prior behavior), read `references/delta-analysis.md` before proposing changes. Plan only verified deltas between the target and the current state instead of restating the target as work.
 
 ## Phase 2: Clarify intent
 
@@ -107,163 +71,100 @@ Keep resolving ambiguity until you can state:
 - Current state
 - Key preferences or tradeoffs
 
-If a high-impact ambiguity remains after exploration and self-interview, ask before finalizing the plan.
-
 ## Phase 3: Clarify implementation shape
 
-Before finalizing, make the plan decision complete. Resolve:
+Resolve before finalizing:
 
-- Approach and architecture
+- Approach and architecture — one selected approach, not "A or B" alternatives
 - Important interfaces, APIs, schemas, inputs, and outputs
 - Data flow or control flow
 - Edge cases and failure modes
 - Compatibility, migration, rollout, or monitoring concerns when relevant
 - Tests, validation, and acceptance criteria
 
-Resolve competing implementation approaches into one selected approach before finalizing. Use repository evidence, stated requirements, established conventions, and safe defaults where sufficient. Ask the user only when the choice materially changes the outcome and cannot be safely inferred.
-
-For every material implementation decision, record the final choice in a way that removes executor discretion. Include enough detail that the implementer knows what to do, not merely what to consider.
+Record each material decision so the implementer knows what to do, not merely what to consider. Rejected alternatives may be mentioned briefly as rationale.
 
 ## Handling unknowns
 
-Treat unknowns differently depending on type.
+Discoverable facts (repo structure, current behavior, names, paths, existing APIs): resolve through non-mutating exploration. Ask only when multiple plausible candidates remain after exploration, nothing relevant is found but the information is necessary, or the ambiguity is actually product intent.
 
-### Discoverable facts
-
-Facts about the repo, codebase, configuration, current behavior, names, paths, and existing APIs should be discovered through non-mutating exploration.
-
-Ask only when:
-
-- Multiple plausible candidates remain after exploration.
-- Nothing relevant is found, but the missing information is necessary.
-- The ambiguity is actually product intent, not repo structure.
-
-When asking, present concrete candidates and recommend a default.
-
-### Preferences and tradeoffs
-
-Preferences that cannot be discovered should be asked early. Examples:
-
-- Product behavior
-- UX choice
-- Backward compatibility tolerance
-- Risk level
-- Test depth
-- Rollout strategy
-
-Prefer 2–4 meaningful options with a recommended default. Avoid filler choices.
-
-If the user does not answer and it is safe to proceed, use the recommended default and record it under assumptions.
+Preferences and tradeoffs (product behavior, UX choice, backward compatibility tolerance, risk level, test depth, rollout strategy): cannot be discovered — ask early.
 
 ## Asking questions
 
-Ask one question per turn. Do not batch multiple decisions into a single message; resolve them sequentially so each answer can inform the next.
+These rules govern every question to the user:
 
-Ask only questions that materially affect the plan, confirm an important assumption, or choose between meaningful tradeoffs after exploration and self-interview have failed to resolve them.
+- Ask only when the answer would materially change the plan and cannot be safely inferred from the repository, stated requirements, established conventions, or a safe default.
+- Ask one question per turn; resolve decisions sequentially so each answer can inform the next.
+- Give 2–4 concrete options with a recommended default. Avoid filler choices.
+- If the user does not answer and it is safe to proceed, use the recommended default and record it under assumptions.
 
-Good questions:
+A decision is under-supported when it materially shapes scope, architecture, behavior, API, or acceptance and cannot be grounded after exploration and self-interview. Do not bury under-supported decisions as assumptions — surface them as questions and resolve them one at a time before finalizing. If the user says to proceed with defaults, record those choices under assumptions.
 
-- “Should this preserve the current API shape, or is a breaking change acceptable? Recommended: preserve compatibility.”
-- “Should this be implemented as a minimal fix or a broader refactor? Recommended: minimal fix for this change.”
-
-Bad questions:
-
-- Questions answerable by searching the repo.
-- Questions that do not change the plan.
-- Broad open-ended questions when concrete options are available.
-
-## Confirm under-supported decisions before finalizing
-
-Before presenting the final plan, gate it on decision confidence.
-
-A decision is *under-supported* when both are true:
-
-- It materially shapes scope, architecture, behavior, API, or acceptance.
-- It cannot be grounded in the repository, stated requirements, established
-  conventions, or a clearly safe default after exploration and self-interview.
-
-For under-supported decisions, do not silently bury them as assumptions. Surface
-them as direct questions to the user.
-
-- Ask one question per turn. Wait for the answer before asking the next.
-- Each question gives concrete options (2–4) and a recommended default.
-- Resolve them one at a time until none remain, then present the final plan.
-- If the user tells you to proceed with defaults, record those choices under
-  assumptions and finalize.
-
-Do not include material open questions in a final plan. If an open question
-would change implementation, ask it before finalizing. Final plans may mention
-only non-blocking unknowns, unavailable evidence, or assumptions that do not
-leave the implementer choosing between material paths.
-
-Low-impact ambiguities still follow the default-and-record rule; this gate
-applies only to decisions whose wrong answer would change the plan.
-
-## Single selected path
-
-When planning reaches competing implementation choices, resolve them into one selected path before finalizing.
-
-Planning should close material decisions before implementation. Do not leave
-the final plan with alternatives such as “A or B”, “either X or Y”, “choose one
-of”, or parallel implementation paths when the choice affects scope,
-architecture, behavior, public API, rollout, testing, or acceptance criteria.
-
-If multiple viable approaches would materially change the outcome, ask the user
-to choose before presenting the final plan. Ask one decision at a time with
-concrete options and a recommended default.
-
-After the user chooses, collapse the plan into that selected approach. Rejected
-alternatives may be mentioned briefly as rationale, but not left as paths for
-the implementer to decide between.
+Good: "Should this preserve the current API shape, or is a breaking change acceptable? Recommended: preserve compatibility."
+Bad: questions answerable by searching the repo, questions that do not change the plan, broad open-ended questions when concrete options are available.
 
 ## Final plan requirements
 
-Only provide the final plan when it is decision complete, executor-invariant, and commits to exactly one selected implementation approach. The implementer should not need to choose architecture, API shape, file placement, naming strategy, edge-case behavior, tests, rollout, or between alternative implementation paths.
+Write the final plan only when it is decision complete and executor-invariant: two competent engineers or agents following the plan should produce materially the same result, without choosing architecture, API shape, file placement, naming, edge-case behavior, tests, or rollout. Material open questions must be resolved before finalizing; final plans may mention only non-blocking unknowns, unavailable evidence, or assumptions that do not leave the implementer choosing between material paths.
 
-Before emitting the final plan, perform this final-plan check internally:
+File rules:
 
-- Could two implementers produce meaningfully different results while both following this plan?
-- Does any step say or imply “decide”, “choose”, “consider”, “maybe”, “if appropriate”, “as needed”, or “etc.” for a material implementation detail?
-- Are any important file locations, interfaces, data flows, behavior rules, or validation steps underspecified?
-- Are assumptions/defaults explicit enough that they become decisions rather than hidden choices?
+- Create the plan at `<project-root>/.pi/plans/plan-<short-kebab-case-topic>.md`. Prefer the repository root from Git; if unavailable, use the current working directory that contains the task context.
+- If a plan document for the same task already exists, update that file instead of creating a new one. The document is the canonical plan the user reviews and comments on.
 
-If any answer indicates remaining discretion, resolve it through repository evidence, a safe default, or a user question before presenting the final plan.
+Final-plan check (run internally before writing):
 
-The plan should be concise by default and include:
+- [ ] Could two implementers produce meaningfully different results while both following this plan?
+- [ ] Does any step say or imply "decide", "choose", "consider", "maybe", "if appropriate", "as needed", or "etc." for a material implementation detail?
+- [ ] Are any important file locations, interfaces, data flows, behavior rules, or validation steps underspecified?
+- [ ] Are assumptions/defaults explicit enough that they become decisions rather than hidden choices?
 
-- Clear title
-- Brief summary
-- Key implementation changes, grouped by subsystem or behavior
-- Important public API/interface/type changes, if any
-- How key requirements are addressed by the selected approach
-- Relevant files, APIs, systems, data flow, or state transitions when they prevent ambiguity
-- Failure behavior, privacy, or security considerations when relevant
-- Test plan and acceptance scenarios
-- Explicit assumptions/defaults chosen
-- Final decisions: the selected architecture, behavior, API/interface shape, file ownership/location, edge-case handling, validation strategy, and any rejected material alternatives when relevant
+If any check fails, resolve it through repository evidence, a safe default, or a user question before presenting the plan.
 
-For target-state, UI, or design-driven plans, also include the evidence inspected, already-matching areas, verified deltas, non-blocking unresolved scope, and unavailable evidence when those details materially affect confidence without leaving implementation choices open.
+Replace language that delegates choices to the implementer:
 
-Prefer behavior-level descriptions over long file-by-file inventories. Mention file paths only when they prevent ambiguity.
+- Bad: "Use the existing pattern where appropriate." → Good: "Place the new parser in `src/shared/lib/parser.ts` and export it from `src/shared/lib/index.ts`, matching the existing shared-lib public API pattern."
+- Bad: "Add tests as needed." → Good: "Add unit tests for success, invalid input, empty input, and network-failure cases in `src/foo/__tests__/bar.test.ts`."
 
-For straightforward changes, keep the structure compact while still including decisions:
+## Plan document template
 
-1. Summary
-2. Final Decisions
-3. Key Changes
-4. Test Plan
-5. Assumptions
+Use this template, adapting sections as needed:
 
-Do not ask “should I proceed?” at the end of the final plan. The user can request implementation separately. It is acceptable to ask the user to correct assumptions, decisions, or scope details if they want changes before implementation.
+```markdown
+# [Title]
 
-Avoid final-plan language that delegates material choices to the implementer. Replace vague instructions with selected decisions, for example:
+## Summary
+[Brief description of the goal and the selected approach]
 
-- Bad: “Use the existing pattern where appropriate.”
-- Good: “Place the new parser in `src/shared/lib/parser.ts` and export it from `src/shared/lib/index.ts`, matching the existing shared-lib public API pattern.”
-- Bad: “Add tests as needed.”
-- Good: “Add unit tests for success, invalid input, empty input, and network-failure cases in `src/foo/__tests__/bar.test.ts`.”
+## Final Decisions
+- [Selected architecture, behavior, API/interface shape, file placement,
+  edge-case handling, validation strategy; rejected material alternatives
+  briefly, when relevant]
+
+## Key Changes
+### [Subsystem or behavior]
+- [Change, with file paths/interfaces where they prevent ambiguity]
+
+## Test Plan
+- [Tests and acceptance scenarios]
+
+## Assumptions
+- [Defaults chosen and their rationale]
+```
+
+Add sections only when relevant: public API/interface/type changes, data flow or state transitions, failure/privacy/security behavior, compatibility/migration/rollout, and — for target-state plans — evidence inspected, already-matching areas, verified deltas, and unavailable evidence. Prefer behavior-level descriptions over file-by-file inventories; mention file paths only when they prevent ambiguity.
 
 ## Output behavior
 
-- If still exploring or clarifying, do not present a final plan yet.
-- If any under-supported high-impact decision is unresolved, ask about it (one per turn) before presenting the final plan.
+- While still exploring or clarifying, do not write or present a final plan.
+- When the first decision-complete plan is ready, write the full plan to the project-local `.pi/plans/plan-*.md` file, then respond with the file path and a concise summary — not a full duplicate of the document. Invite feedback on the plan document.
+- On feedback, update the same document and respond only with the changed portions in an `As-is / To-be` delta format (including affected assumptions, decisions, or test-plan changes) plus the file path. Reprint the full plan only when explicitly asked or when no prior full plan document exists in the conversation.
+
+## Gotchas
+
+- An imperative like "do it" while planning is active means "plan how to do it", not permission to implement.
+- Writing `.pi/plans/plan-*.md` is not implementation; editing any other repo-tracked file is.
+- Formatters, linters, codegen, and snapshot acceptance count as mutations even when framed as checks.
+- Do not end the final plan with "should I proceed?" — the user requests implementation separately. Asking them to correct assumptions, decisions, or scope is fine.
+- A final plan is a selected execution path, not a menu: no "A or B" or "either X or Y" for material choices.
