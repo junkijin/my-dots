@@ -12,7 +12,7 @@
  */
 
 import { getAgentDir, SettingsManager, type ExtensionAPI } from "@earendil-works/pi-coding-agent";
-import { isContextOverflow, type AssistantMessage } from "@earendil-works/pi-ai";
+import { isContextOverflow, isRetryableAssistantError, type AssistantMessage } from "@earendil-works/pi-ai";
 
 const ESC = "\x1b";
 const BEL = "\x07";
@@ -22,9 +22,6 @@ const DEFAULT_RETRY_SETTINGS = {
 	enabled: true,
 	maxRetries: 3,
 };
-
-const RETRYABLE_ERROR_PATTERN =
-	/overloaded|provider.?returned.?error|rate.?limit|too many requests|429|500|502|503|504|service.?unavailable|server.?error|internal.?error|network.?error|connection.?error|connection.?refused|connection.?lost|other side closed|fetch failed|upstream.?connect|reset before headers|socket hang up|ended without|http2 request did not get a response|timed? out|timeout|terminated|retry delay/i;
 
 function sanitizeOSCText(value: string): string {
 	return value
@@ -140,7 +137,7 @@ function isRetryableError(message: AssistantMessage, contextWindow: number | und
 		return false;
 	}
 
-	return RETRYABLE_ERROR_PATTERN.test(message.errorMessage);
+	return isRetryableAssistantError(message);
 }
 
 export default function (pi: ExtensionAPI) {
