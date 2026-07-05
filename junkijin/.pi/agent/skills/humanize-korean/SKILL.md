@@ -1,6 +1,6 @@
 ---
 name: humanize-korean
-description: Use when removing AI tells and translationese from AI-written Korean text to make it read like human writing. Applies even when the user does not mention AI and only asks to make the text sound human. Not for general editing, spelling correction, translation, summarization, or non-Korean text.
+description: Use when making Korean text sound more human by removing AI tells or translationese; not for general proofreading, translation, summarization, or non-Korean text.
 ---
 
 # Humanize Korean — AI 한글 티 제거

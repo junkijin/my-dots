@@ -21,6 +21,33 @@ Progress:
 
 Stay in planning behavior until the user explicitly asks you to implement or modify files. Writing or updating the planning artifact under the project's `.pi/plans/plan-*.md` is allowed during planning and does not count as implementation.
 
+## Planning mode lock
+
+Once this skill is activated, remain in planning mode until the user gives explicit implementation authorization after the latest planning context. Do not infer authorization from technical specificity, urgency, or implementation-like wording.
+
+Only clear phrases like these unlock implementation:
+
+- "implement this plan"
+- "apply the plan"
+- "modify the files"
+- "edit the source code"
+- "make the actual code changes"
+- "proceed with implementation"
+- Equivalent unambiguous wording in the user's language that explicitly permits file mutation.
+
+While planning mode is active, task-like phrases such as "make it do X," "merge X," "refactor X," "apply this," "reflect this," "clean this up," or "change X so that Y" are not enough by themselves. Treat them as requests to update the plan unless the user explicitly authorizes mutation of implementation files.
+
+## Pre-mutation gate
+
+Before any mutating tool call outside `.pi/plans/`, stop and verify all of the following:
+
+1. Is planning mode currently active?
+2. Did the user explicitly authorize implementation after the latest plan or plan revision?
+3. Is the target outside `.pi/plans/`?
+4. Would the operation edit, write, delete, move, generate, format, or otherwise mutate source code, config, tests, generated files, or other non-plan artifacts?
+
+If planning mode is active, the target is outside `.pi/plans/`, and explicit implementation authorization is absent, do not mutate. Instead, update the plan document or ask: "Should I update the plan only, or may I modify the implementation files now?"
+
 ## Execution boundary
 
 You may perform non-mutating exploration that improves the plan. Do not perform mutating implementation work.
@@ -36,10 +63,31 @@ Allowed:
 Not allowed:
 
 - Edit, write, delete, or patch implementation files (source code, config, tests, generated files).
+- Move, rename, or remove implementation files.
+- Run destructive shell commands such as `rm`, `mv`, or commands whose purpose is to carry out a refactor.
 - Run formatters, linters, migrations, codegen, or snapshot acceptance that rewrites repo-tracked files.
 - Execute commands whose purpose is to carry out the implementation rather than refine the plan.
 
 When in doubt, ask: "Is this doing the work, or learning enough to plan the work?" If it is doing the work, do not do it.
+
+## Ambiguous implementation-like requests during planning
+
+When planning mode is active, interpret implementation-like requests as plan revision requests unless the user explicitly authorizes file mutation. Examples:
+
+- "merge these files" means "update the plan to merge these files."
+- "make the tool share code" means "update the plan to share code."
+- "apply that strategy" means "reflect that strategy in the plan."
+- "clean this up" means "plan the cleanup."
+
+If the user's intent is ambiguous and the answer would materially affect whether files are mutated, ask exactly one clarification question before mutating: "Should I update the plan only, or may I modify the implementation files now?"
+
+## High-risk mutations
+
+Even after implementation authorization, require extra caution before deleting, moving, renaming, or wholesale-replacing files. If the user did not explicitly request that exact destructive operation in the same implementation-authorizing message, ask for confirmation first.
+
+## No plan-and-implement in the same turn
+
+When the user asks to revise a plan, only revise the plan and summarize the change. Do not implement in the same assistant turn, even if the revised plan is obvious. Wait for a later explicit implementation authorization.
 
 ## Phase 1: Ground in the environment
 
@@ -164,7 +212,10 @@ Add sections only when relevant: public API/interface/type changes, data flow or
 ## Gotchas
 
 - An imperative like "do it" while planning is active means "plan how to do it", not permission to implement.
+- Implementation-like wording while planning is active is not implementation authorization. "Merge these files," "make this reusable," or "apply this change" means update the plan unless the user explicitly permits file mutation.
+- Technical specificity is not authorization. A user can describe exact files, functions, or refactors while still asking for a plan.
 - Writing `.pi/plans/plan-*.md` is not implementation; editing any other repo-tracked file is.
+- Deleting or moving files is a high-risk mutation. Do not do it during planning, and ask for confirmation unless it was explicitly authorized for implementation.
 - Formatters, linters, codegen, and snapshot acceptance count as mutations even when framed as checks.
 - Do not end the final plan with "should I proceed?" — the user requests implementation separately. Asking them to correct assumptions, decisions, or scope is fine.
 - A final plan is a selected execution path, not a menu: no "A or B" or "either X or Y" for material choices.
