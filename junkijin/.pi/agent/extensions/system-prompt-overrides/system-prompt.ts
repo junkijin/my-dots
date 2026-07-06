@@ -4,8 +4,31 @@ import { dirname, join, resolve } from "node:path";
 
 type SkillForPrompt = NonNullable<BuildSystemPromptOptions["skills"]>[number];
 
+type PromptSection = string | undefined | null | false;
+
+const PROMPT_SECTION_SEPARATOR = "\n\n";
+const PROJECT_CONTEXT_SEPARATOR = "\n";
+
+function normalizePromptSection(section: PromptSection): string | undefined {
+	if (!section) return undefined;
+
+	const trimmed = section.trim();
+	return trimmed.length > 0 ? trimmed : undefined;
+}
+
+function joinPromptSections(sections: PromptSection[]): string {
+	const normalizedSections: string[] = [];
+
+	for (const section of sections) {
+		const normalizedSection = normalizePromptSection(section);
+		if (normalizedSection) normalizedSections.push(normalizedSection);
+	}
+
+	return normalizedSections.join(PROMPT_SECTION_SEPARATOR);
+}
+
 export function appendPrompt(existing: string | undefined, additionalPrompt: string): string {
-	return [existing, additionalPrompt].map(v => v?.trim()).filter(v => Boolean(v?.length)).join("\n\n");
+	return joinPromptSections([existing, additionalPrompt]);
 }
 
 function escapeXml(value: string): string {
@@ -17,24 +40,38 @@ function escapeXml(value: string): string {
 		.replace(/'/g, "&apos;");
 }
 
+function formatXmlElement(name: string, content: string): string {
+	const trimmedContent = content.trim();
+
+	if (trimmedContent.length === 0) {
+		return `<${name}></${name}>`;
+	}
+
+	return `<${name}>${escapeXml(trimmedContent)}</${name}>`;
+}
+
 function formatSkillsForPrompt(skills: SkillForPrompt[]): string {
 	const visibleSkills = skills.filter((skill) => !skill.disableModelInvocation);
 	if (visibleSkills.length === 0) return "";
 
 	const lines = [
-		"\n\n\nThe following skills provide specialized instructions for specific tasks.",
-		"Use the read tool to load a skill's file when the task matches its description.",
-		"When a skill file references a relative path, resolve it against the skill directory (parent of SKILL.md / dirname of the path) and use that absolute path in tool commands.",
-		"",
 		"<available_skills>",
+		"<instructions>",
+		formatXmlElement("instruction", "The following skills provide specialized instructions for specific tasks."),
+		formatXmlElement("instruction", "Use the read tool to load a skill's file when the task matches its description."),
+		formatXmlElement(
+			"instruction",
+			"When a skill file references a relative path, resolve it against the skill directory (parent of SKILL.md / dirname of the path) and use that absolute path in tool commands.",
+		),
+		"</instructions>",
 	];
 
 	for (const skill of visibleSkills) {
-		lines.push("  <skill>");
-		lines.push(`    <name>${escapeXml(skill.name)}</name>`);
-		lines.push(`    <description>${escapeXml(skill.description)}</description>`);
-		lines.push(`    <location>${escapeXml(skill.filePath)}</location>`);
-		lines.push("  </skill>");
+		lines.push("<skill>");
+		lines.push(formatXmlElement("name", skill.name));
+		lines.push(formatXmlElement("description", skill.description));
+		lines.push(formatXmlElement("location", skill.filePath));
+		lines.push("</skill>");
 	}
 
 	lines.push("</available_skills>");
@@ -67,17 +104,34 @@ function getPiPackageDir(): string {
 	return dirname(process.argv[1] ?? process.cwd());
 }
 
-function appendProjectContext(prompt: string, contextFiles: NonNullable<BuildSystemPromptOptions["contextFiles"]>): string {
-	if (contextFiles.length === 0) return prompt;
+type ProjectContextFile = NonNullable<BuildSystemPromptOptions["contextFiles"]>[number];
 
-	let nextPrompt = prompt;
-	nextPrompt += "\n\n<project_context>\n\n";
-	nextPrompt += "Project-specific instructions and guidelines:\n\n";
-	for (const { path: filePath, content } of contextFiles) {
-		nextPrompt += `<project_instructions path="${filePath}">\n${content}\n</project_instructions>\n\n`;
+function formatProjectInstruction({ path: filePath, content }: ProjectContextFile): string {
+	const trimmedContent = content.trim();
+	const escapedPath = escapeXml(filePath);
+
+	if (trimmedContent.length === 0) {
+		return `<project_instructions path="${escapedPath}"></project_instructions>`;
 	}
-	nextPrompt += "</project_context>\n";
-	return nextPrompt;
+
+	return [`<project_instructions path="${escapedPath}">`, trimmedContent, "</project_instructions>"].join(PROJECT_CONTEXT_SEPARATOR);
+}
+
+function formatProjectContext(contextFiles: NonNullable<BuildSystemPromptOptions["contextFiles"]>): string {
+	if (contextFiles.length === 0) return "";
+
+	const projectContextLines = [
+		"<project_context>",
+		formatXmlElement("summary", "Project-specific instructions and guidelines"),
+		...contextFiles.map(formatProjectInstruction),
+		"</project_context>",
+	];
+
+	return projectContextLines.map((line) => line.trimEnd()).filter((line) => line.trim().length > 0).join(PROJECT_CONTEXT_SEPARATOR);
+}
+
+function formatRuntimeContext(date: string, cwd: string): string {
+	return `Current date: ${date}\nCurrent working directory: ${cwd}`;
 }
 
 export function buildSystemPrompt(options: BuildSystemPromptOptions): string {
@@ -97,23 +151,19 @@ export function buildSystemPrompt(options: BuildSystemPromptOptions): string {
 	const month = String(now.getMonth() + 1).padStart(2, "0");
 	const day = String(now.getDate()).padStart(2, "0");
 	const date = `${year}-${month}-${day}`;
-	const appendSection = appendSystemPrompt ? `\n${appendSystemPrompt}` : "";
 	const contextFiles = providedContextFiles ?? [];
 	const skills = providedSkills ?? [];
 
 	if (customPrompt) {
-		let prompt = customPrompt;
-		if (appendSection) {
-			prompt += appendSection;
-		}
-		prompt = appendProjectContext(prompt, contextFiles);
 		const customPromptHasRead = !selectedTools || selectedTools.includes("read");
-		if (customPromptHasRead && skills.length > 0) {
-			prompt += formatSkillsForPrompt(skills);
-		}
-		prompt += `\n\n\nCurrent date: ${date}`;
-		prompt += `\nCurrent working directory: ${promptCwd}`;
-		return prompt;
+
+		return joinPromptSections([
+			customPrompt,
+			appendSystemPrompt,
+			formatProjectContext(contextFiles),
+			customPromptHasRead ? formatSkillsForPrompt(skills) : undefined,
+			formatRuntimeContext(date, promptCwd),
+		]);
 	}
 
 	const packageDir = getPiPackageDir();
@@ -150,7 +200,7 @@ export function buildSystemPrompt(options: BuildSystemPromptOptions): string {
 	addGuideline("Show file paths clearly when working with files");
 	const guidelines = guidelinesList.map((guideline) => `- ${guideline}`).join("\n");
 
-	let prompt = `You are an expert coding assistant operating inside pi, a coding agent harness. You help users by reading files, executing commands, editing code, and writing new files.
+	const basePrompt = `You are an expert coding assistant operating inside pi, a coding agent harness. You help users by reading files, executing commands, editing code, and writing new files.
 
 Available tools:
 ${toolsList}
@@ -168,14 +218,12 @@ Pi documentation (read only when the user asks about pi itself, its SDK, extensi
 - When asked about: extensions (docs/extensions.md, examples/extensions/), themes (docs/themes.md), skills (docs/skills.md), prompt templates (docs/prompt-templates.md), TUI components (docs/tui.md), keybindings (docs/keybindings.md), SDK integrations (docs/sdk.md), custom providers (docs/custom-provider.md), adding models (docs/models.md), pi packages (docs/packages.md)
 - When working on pi topics, read the docs and examples, and follow .md cross-references before implementing
 - Always read pi .md files completely and follow links to related docs (e.g., tui.md for TUI API details)`;
-	if (appendSection) {
-		prompt += appendSection;
-	}
-	prompt = appendProjectContext(prompt, contextFiles);
-	if (hasRead && skills.length > 0) {
-		prompt += formatSkillsForPrompt(skills);
-	}
-	prompt += `\n\n\nCurrent date: ${date}`;
-	prompt += `\nCurrent working directory: ${promptCwd}`;
-	return prompt;
+
+	return joinPromptSections([
+		basePrompt,
+		appendSystemPrompt,
+		formatProjectContext(contextFiles),
+		hasRead ? formatSkillsForPrompt(skills) : undefined,
+		formatRuntimeContext(date, promptCwd),
+	]);
 }
