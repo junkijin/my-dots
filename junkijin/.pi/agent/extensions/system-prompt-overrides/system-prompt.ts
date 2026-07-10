@@ -1,6 +1,16 @@
-import { type BuildSystemPromptOptions } from "@earendil-works/pi-coding-agent";
+import type { BuildSystemPromptOptions } from "@earendil-works/pi-coding-agent";
 import { existsSync, realpathSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
+import {
+	AVAILABLE_SKILLS_PROMPT_TEMPLATE,
+	BASE_SYSTEM_PROMPT_TEMPLATE,
+	BASH_FILE_OPERATIONS_GUIDELINE,
+	DEFAULT_GUIDELINES,
+	EMPTY_TOOLS_PROMPT,
+	PROJECT_CONTEXT_PROMPT_TEMPLATE,
+	RUNTIME_CONTEXT_PROMPT_TEMPLATE,
+	renderPromptTemplate,
+} from "./prompt-files.ts";
 
 type SkillForPrompt = NonNullable<BuildSystemPromptOptions["skills"]>[number];
 
@@ -54,28 +64,19 @@ function formatSkillsForPrompt(skills: SkillForPrompt[]): string {
 	const visibleSkills = skills.filter((skill) => !skill.disableModelInvocation);
 	if (visibleSkills.length === 0) return "";
 
-	const lines = [
-		"<available_skills>",
-		"<instructions>",
-		formatXmlElement("instruction", "The following skills provide specialized instructions for specific tasks."),
-		formatXmlElement("instruction", "Use the read tool to load a skill's file when the task matches its description."),
-		formatXmlElement(
-			"instruction",
-			"When a skill file references a relative path, resolve it against the skill directory (parent of SKILL.md / dirname of the path) and use that absolute path in tool commands.",
-		),
-		"</instructions>",
-	];
+	const skillElements: string[] = [];
 
 	for (const skill of visibleSkills) {
-		lines.push("<skill>");
-		lines.push(formatXmlElement("name", skill.name));
-		lines.push(formatXmlElement("description", skill.description));
-		lines.push(formatXmlElement("location", skill.filePath));
-		lines.push("</skill>");
+		skillElements.push("<skill>");
+		skillElements.push(formatXmlElement("name", skill.name));
+		skillElements.push(formatXmlElement("description", skill.description));
+		skillElements.push(formatXmlElement("location", skill.filePath));
+		skillElements.push("</skill>");
 	}
 
-	lines.push("</available_skills>");
-	return lines.join("\n");
+	return renderPromptTemplate(AVAILABLE_SKILLS_PROMPT_TEMPLATE, {
+		SKILL_ELEMENTS: skillElements.join("\n"),
+	});
 }
 
 function getPiPackageDir(): string {
@@ -120,18 +121,13 @@ function formatProjectInstruction({ path: filePath, content }: ProjectContextFil
 function formatProjectContext(contextFiles: NonNullable<BuildSystemPromptOptions["contextFiles"]>): string {
 	if (contextFiles.length === 0) return "";
 
-	const projectContextLines = [
-		"<project_context>",
-		formatXmlElement("summary", "Project-specific instructions and guidelines"),
-		...contextFiles.map(formatProjectInstruction),
-		"</project_context>",
-	];
-
-	return projectContextLines.map((line) => line.trimEnd()).filter((line) => line.trim().length > 0).join(PROJECT_CONTEXT_SEPARATOR);
+	return renderPromptTemplate(PROJECT_CONTEXT_PROMPT_TEMPLATE, {
+		PROJECT_INSTRUCTIONS: contextFiles.map(formatProjectInstruction).join(PROJECT_CONTEXT_SEPARATOR),
+	});
 }
 
 function formatRuntimeContext(date: string, cwd: string): string {
-	return `Current date: ${date}\nCurrent working directory: ${cwd}`;
+	return renderPromptTemplate(RUNTIME_CONTEXT_PROMPT_TEMPLATE, { DATE: date, CWD: cwd });
 }
 
 export function buildSystemPrompt(options: BuildSystemPromptOptions): string {
@@ -173,7 +169,7 @@ export function buildSystemPrompt(options: BuildSystemPromptOptions): string {
 	const tools = selectedTools || ["read", "bash", "edit", "write"];
 	const visibleTools = tools.filter((name) => !!toolSnippets?.[name]);
 	const toolsList =
-		visibleTools.length > 0 ? visibleTools.map((name) => `- ${name}: ${toolSnippets[name]}`).join("\n") : "(none)";
+		visibleTools.length > 0 ? visibleTools.map((name) => `- ${name}: ${toolSnippets[name]}`).join("\n") : EMPTY_TOOLS_PROMPT;
 
 	const guidelinesList: string[] = [];
 	const guidelinesSet = new Set<string>();
@@ -190,34 +186,24 @@ export function buildSystemPrompt(options: BuildSystemPromptOptions): string {
 	const hasRead = tools.includes("read");
 
 	if (hasBash && !hasGrep && !hasFind && !hasLs) {
-		addGuideline("Use bash for file operations like ls, rg, find");
+		addGuideline(BASH_FILE_OPERATIONS_GUIDELINE);
 	}
 	for (const guideline of promptGuidelines ?? []) {
 		const normalized = guideline.trim();
 		if (normalized.length > 0) addGuideline(normalized);
 	}
-	addGuideline("Be concise in your responses");
-	addGuideline("Show file paths clearly when working with files");
+	for (const guideline of DEFAULT_GUIDELINES) {
+		addGuideline(guideline);
+	}
 	const guidelines = guidelinesList.map((guideline) => `- ${guideline}`).join("\n");
 
-	const basePrompt = `You are an expert coding assistant operating inside pi, a coding agent harness. You help users by reading files, executing commands, editing code, and writing new files.
-
-Available tools:
-${toolsList}
-
-In addition to the tools above, you may have access to other custom tools depending on the project.
-
-Guidelines:
-${guidelines}
-
-Pi documentation (read only when the user asks about pi itself, its SDK, extensions, themes, skills, or TUI):
-- Main documentation: ${readmePath}
-- Additional docs: ${docsPath}
-- Examples: ${examplesPath} (extensions, custom tools, SDK)
-- When reading pi docs or examples, resolve docs/... under Additional docs and examples/... under Examples, not the current working directory
-- When asked about: extensions (docs/extensions.md, examples/extensions/), themes (docs/themes.md), skills (docs/skills.md), prompt templates (docs/prompt-templates.md), TUI components (docs/tui.md), keybindings (docs/keybindings.md), SDK integrations (docs/sdk.md), custom providers (docs/custom-provider.md), adding models (docs/models.md), pi packages (docs/packages.md)
-- When working on pi topics, read the docs and examples, and follow .md cross-references before implementing
-- Always read pi .md files completely and follow links to related docs (e.g., tui.md for TUI API details)`;
+	const basePrompt = renderPromptTemplate(BASE_SYSTEM_PROMPT_TEMPLATE, {
+		TOOLS_LIST: toolsList,
+		GUIDELINES: guidelines,
+		README_PATH: readmePath,
+		DOCS_PATH: docsPath,
+		EXAMPLES_PATH: examplesPath,
+	});
 
 	return joinPromptSections([
 		basePrompt,
