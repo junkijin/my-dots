@@ -1,0 +1,4 @@
+interface:
+  display_name: "Implementation"
+  short_description: "Implement code changes with evidence and verification"
+  default_prompt: "Use $implementation to implement the requested code change and verify it."

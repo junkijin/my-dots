@@ -1,6 +1,6 @@
 ---
 name: planning
-description: Create or refine implementation plans that explain how an existing codebase can evolve from its current state to a requested outcome. Use when a software change benefits from codebase-aware technical direction before implementation.
+description: Create or refine a standalone, codebase-aware implementation plan for a software change. Use when the user explicitly requests a plan or when a complex change requires a plan artifact before an authorized implementation phase. Do not use merely because a change benefits from thought, and never substitute a plan deliverable for a direct, sufficiently clear implementation request. Do not use for requirements-only, diagnosis-only, review-only, or verification-only work.
 ---
 
 # Planning

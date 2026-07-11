@@ -22,17 +22,25 @@ const SEARCH_TOOL_NAME = "web_search";
 const FETCH_TOOL_NAME = "web_fetch";
 const PARALLEL_MCP_ENDPOINT = "https://search.parallel.ai/mcp";
 const USER_AGENT = "pi/web-tools";
-const SESSION_ID = `pi_${randomUUID()}`;
+const SEARCH_TIMEOUT_MS = 60_000;
+const FETCH_TIMEOUT_MS = 120_000;
+const SEARCH_RESPONSE_MAX_BYTES = 8 * 1024 * 1024;
+const FETCH_RESPONSE_MAX_BYTES = 32 * 1024 * 1024;
+const MAX_RETRIES = 2;
+const MAX_RETRY_DELAY_MS = 5_000;
+const RETRY_BASE_DELAY_MS = 500;
 
 const UNKNOWN_VALUE = "unknown";
 const NO_DATE_VALUE = "n.d.";
 const NO_EXCERPT_MESSAGE = "(no excerpt provided)";
 const NO_CONTENT_MESSAGE = "(no content provided)";
-const NO_SEARCH_RESULTS_MESSAGE = "No search results found. Please try a different query.";
-const NO_FETCH_RESULTS_MESSAGE = "No web content was fetched. Please check the URL, try a more specific objective, or use web_search first.";
+const NO_SEARCH_RESULTS_MESSAGE = "no_results: No search results found. Please try a different query.";
+const NO_FETCH_RESULTS_MESSAGE = "no_results: No web content was fetched. Please check the URL, try a more specific objective, or use web_search first.";
 const DETAILS_EXCERPTS_OMITTED_MESSAGE = "(excerpts omitted from session details because formatted output was truncated; use the full output path shown below to inspect them)";
 const DETAILS_CONTENT_OMITTED_MESSAGE = "(content omitted from session details because formatted output was truncated; use the full output path shown below to inspect it)";
 const DISPLAY_SECTION_SEPARATOR = "─";
+const EXTERNAL_SEARCH_SAFETY_GUIDANCE = `Never include credentials, secrets, URL userinfo, or pasted long code/logs in web requests. Generalize code and logs into short error messages, symbols, and concepts first. Do not send proprietary or internal code to external search unless the user explicitly asked to search the web using that code.`;
+const TEMP_OUTPUT_GUIDANCE = `A returned Pi web temp full-output path (normally /tmp/pi-web-*) is a read-only tool artifact that may be inspected even when ordinary workspace access rules are narrower; never modify it.`;
 
 const SEARCH_TOOL_DESCRIPTION = `Purpose: Perform web searches and return
 LLM-friendly results, including excerpts that are usually sufficient to
@@ -43,7 +51,10 @@ Ideal Use Cases:
 - Research, comparison, documentation, and troubleshooting questions
 - Broad tasks where multiple \`search_queries\` can be issued in a single call
 
-Output is truncated to ${DEFAULT_MAX_LINES} lines or ${formatSize(DEFAULT_MAX_BYTES)} (whichever is hit first). If truncated, full output is saved to a temp file.`;
+Security:
+- ${EXTERNAL_SEARCH_SAFETY_GUIDANCE}
+
+Output is truncated to ${DEFAULT_MAX_LINES} lines or ${formatSize(DEFAULT_MAX_BYTES)} (whichever is hit first). If truncated, full output is saved to a temp file. ${TEMP_OUTPUT_GUIDANCE}`;
 
 const FETCH_TOOL_DESCRIPTION = `Purpose: Fetch and extract relevant content
 from a specific web URL. Use only when web_search excerpts are insufficient
@@ -55,21 +66,24 @@ Ideal Use Cases:
 - You need full-page analysis (long article, document, or page structure)
 - web_search excerpts are conflicting or clearly insufficient to answer
 
-Output is truncated to ${DEFAULT_MAX_LINES} lines or ${formatSize(DEFAULT_MAX_BYTES)} (whichever is hit first). If truncated, full output is saved to a temp file.`;
+Security:
+- ${EXTERNAL_SEARCH_SAFETY_GUIDANCE}
+
+Output is truncated to ${DEFAULT_MAX_LINES} lines or ${formatSize(DEFAULT_MAX_BYTES)} (whichever is hit first). If truncated, full output is saved to a temp file. ${TEMP_OUTPUT_GUIDANCE}`;
 
 const SEARCH_QUERY_SCHEMA = Type.String({ minLength: 1, maxLength: 200 });
 const searchQueriesSchema = (description: string) => Type.Array(SEARCH_QUERY_SCHEMA, { description, minItems: 1, maxItems: 5 });
 const WEB_SEARCH_PARAMS_SCHEMA = Type.Object({
 	objective: Type.String({
-		description: "Natural-language description of what the web search is trying to find. Try to make the search objective atomic and self-contained. Include source or freshness guidance when useful.",
+		description: "Natural-language description of what the web search is trying to find. Make it atomic and self-contained. Include source or freshness guidance when useful. Generalize code/logs; never include secrets or proprietary/internal code unless the user explicitly requested external search using it.",
 		minLength: 1,
 		maxLength: 5000,
 	}),
-	search_queries: searchQueriesSchema("Concise keyword search queries, 3-6 words each. At least one query is required; provide 2-3 diverse queries for best results. Maximum 5 queries, 200 characters per query."),
+	search_queries: searchQueriesSchema("Concise generalized keyword queries, 3-6 words each. Never paste secrets, code, or logs. At least one query is required; provide 2-3 diverse queries for best results. Maximum 5 queries, 200 characters per query."),
 });
 
 const WEB_FETCH_PARAMS_SCHEMA = Type.Object({
-	url: Type.String({ description: "URL to extract content from. Must be a valid HTTP/HTTPS URL." }),
+	url: Type.String({ description: "URL to extract content from. Must be a valid HTTP/HTTPS URL without embedded username or password." }),
 	objective: Type.Optional(Type.String({
 		description: "Natural-language description of what information you're looking for from the URL. Keep it short and specific; omit it for broader page content.",
 		maxLength: 200,
@@ -97,17 +111,44 @@ type SearchResult = WebResult;
 type FetchResult = WebResult & { full_content?: string | null };
 type FetchError = { url?: string; error_type?: string; http_status_code?: number | null; content?: string | null };
 type WebWarning = { type?: string; message?: string; detail?: unknown };
-type SearchResponse = { results?: SearchResult[]; warnings?: WebWarning[] | null; session_id?: string };
-type FetchResponse = { results?: FetchResult[]; errors?: FetchError[]; warnings?: WebWarning[] | null; session_id?: string };
+type SearchResponse = { results: SearchResult[]; warnings?: WebWarning[] | null; session_id?: string };
+type FetchResponse = { results: FetchResult[]; errors: FetchError[]; warnings?: WebWarning[] | null; session_id?: string };
 type DetailsBase<T extends WebResult> = { results: T[]; warnings?: WebWarning[] | null; truncation?: TruncationResult; fullOutputPath?: string };
 type SearchDetails = DetailsBase<SearchResult>;
 type FetchDetails = DetailsBase<FetchResult> & { errors: FetchError[] };
 type FormattedOutput = { text: string; truncation?: TruncationResult; fullOutputPath?: string };
-type McpResponse<T> = { result?: { content?: Array<{ text?: string }>; structuredContent?: T } };
 type ToolResultLike = { content?: Array<{ type?: string; text?: string }>; details?: unknown };
+type WebToolErrorCode =
+	| "authentication_error"
+	| "http_status"
+	| "input_rejected"
+	| "invalid_response"
+	| "json_rpc_error"
+	| "mcp_tool_error"
+	| "protocol_error"
+	| "rate_limited"
+	| "response_too_large"
+	| "session_unavailable"
+	| "timeout"
+	| "transport_error";
+
+class WebToolError extends Error {
+	readonly code: WebToolErrorCode;
+	readonly status?: number;
+	readonly retryAfterMs?: number;
+	readonly retryable: boolean;
+
+	constructor(code: WebToolErrorCode, message: string, options: { cause?: unknown; status?: number; retryAfterMs?: number; retryable?: boolean } = {}) {
+		super(`${code}: ${message}`, options.cause === undefined ? undefined : { cause: options.cause });
+		this.name = "WebToolError";
+		this.code = code;
+		this.status = options.status;
+		this.retryAfterMs = options.retryAfterMs;
+		this.retryable = options.retryable ?? false;
+	}
+}
 
 const identity: TextFormatter = (text) => text;
-const arrayOrEmpty = <T>(value: T[] | undefined): T[] => Array.isArray(value) ? value : [];
 const attempt = <T>(fn: () => T): T | undefined => {
 	try {
 		return fn();
@@ -116,38 +157,130 @@ const attempt = <T>(fn: () => T): T | undefined => {
 	}
 };
 
-const isRecord = (value: unknown): value is Record<string, unknown> => typeof value === "object" && value !== null;
-const hasAnyKey = (value: unknown, keys: string[]): value is Record<string, unknown> => isRecord(value) && keys.some((key) => key in value);
-const isSearchResponse = (value: unknown): value is SearchResponse => hasAnyKey(value, ["results", "warnings", "session_id"]);
-const isFetchResponse = (value: unknown): value is FetchResponse => hasAnyKey(value, ["results", "errors", "warnings", "session_id"]);
-const parseJson = <T>(text: string): T | undefined => attempt(() => JSON.parse(text) as T);
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+	typeof value === "object" && value !== null && !Array.isArray(value);
+const hasOptionalString = (value: Record<string, unknown>, key: string, nullable = false): boolean =>
+	!(key in value) || typeof value[key] === "string" || (nullable && value[key] === null);
+const hasOptionalNumber = (value: Record<string, unknown>, key: string, nullable = false): boolean =>
+	!(key in value) || (typeof value[key] === "number" && Number.isFinite(value[key])) || (nullable && value[key] === null);
+const hasOptionalStringArray = (value: Record<string, unknown>, key: string): boolean =>
+	!(key in value) || (Array.isArray(value[key]) && value[key].every((item) => typeof item === "string"));
 
-function parseMcpPayload<T>(payload: string, isExpectedResponse: (value: unknown) => value is T): T | undefined {
-	const trimmed = payload.trim();
-	if (!trimmed.startsWith("{")) return undefined;
+const isWebResult = (value: unknown): value is WebResult => isRecord(value)
+	&& hasOptionalString(value, "url")
+	&& hasOptionalString(value, "title", true)
+	&& hasOptionalString(value, "publish_date", true)
+	&& hasOptionalStringArray(value, "excerpts");
+const isSearchResult = (value: unknown): value is SearchResult => isWebResult(value);
+const isFetchResult = (value: unknown): value is FetchResult => isRecord(value) && isWebResult(value) && hasOptionalString(value, "full_content", true);
+const isFetchError = (value: unknown): value is FetchError => isRecord(value)
+	&& hasOptionalString(value, "url")
+	&& hasOptionalString(value, "error_type")
+	&& hasOptionalNumber(value, "http_status_code", true)
+	&& hasOptionalString(value, "content", true);
+const isWebWarning = (value: unknown): value is WebWarning => isRecord(value)
+	&& hasOptionalString(value, "type")
+	&& hasOptionalString(value, "message");
+const hasWarnings = (value: Record<string, unknown>): boolean => !("warnings" in value)
+	|| value.warnings === null
+	|| (Array.isArray(value.warnings) && value.warnings.every(isWebWarning));
+const hasSessionId = (value: Record<string, unknown>): boolean => !("session_id" in value) || typeof value.session_id === "string";
+const isSearchResponse = (value: unknown): value is SearchResponse => isRecord(value)
+	&& Array.isArray(value.results)
+	&& value.results.every(isSearchResult)
+	&& hasWarnings(value)
+	&& hasSessionId(value);
+const isFetchResponse = (value: unknown): value is FetchResponse => isRecord(value)
+	&& Array.isArray(value.results)
+	&& value.results.every(isFetchResult)
+	&& Array.isArray(value.errors)
+	&& value.errors.every(isFetchError)
+	&& hasWarnings(value)
+	&& hasSessionId(value);
 
-	const result = parseJson<McpResponse<T>>(trimmed)?.result;
-	if (!result) return undefined;
-	if (isExpectedResponse(result.structuredContent)) return result.structuredContent;
-
-	const parsedText = parseJson<unknown>(result.content?.find((item) => item.text)?.text ?? "");
-	return isExpectedResponse(parsedText) ? parsedText : undefined;
-}
-
-function parseMcpToolResponse<T>(body: string, isExpectedResponse: (value: unknown) => value is T): T | undefined {
-	const directResponse = parseMcpPayload(body, isExpectedResponse);
-	if (directResponse) return directResponse;
-
-	for (const line of body.split("\n")) {
-		if (!line.startsWith("data: ")) continue;
-		const streamedResponse = parseMcpPayload(line.slice(6), isExpectedResponse);
-		if (streamedResponse) return streamedResponse;
+function parseJsonValue(text: string, code: "protocol_error" | "invalid_response", label: string): unknown {
+	try {
+		return JSON.parse(text) as unknown;
+	} catch (cause) {
+		throw new WebToolError(code, `${label} was not valid JSON.`, { cause });
 	}
-	return undefined;
 }
 
-const normalizeWhitespace = (text: string): string => text.replace(/[\u0000-\u001f\u007f]/g, " ").replace(/\s+/g, " ").trim();
-const normalizeMultilineText = (text: string): string => text.replace(/\r\n?/g, "\n").replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/g, " ").trim();
+function parseMcpPayload<T>(payload: string, isExpectedResponse: (value: unknown) => value is T): T {
+	const envelope = parseJsonValue(payload.trim(), "protocol_error", "Parallel Search MCP envelope");
+	if (!isRecord(envelope)) throw new WebToolError("protocol_error", "Parallel Search MCP returned a non-object JSON-RPC envelope.");
+	if ("jsonrpc" in envelope && envelope.jsonrpc !== "2.0") throw new WebToolError("protocol_error", "Parallel Search MCP returned an unsupported JSON-RPC version.");
+
+	if ("error" in envelope) {
+		const rpcError = envelope.error;
+		const code = isRecord(rpcError) && (typeof rpcError.code === "string" || typeof rpcError.code === "number") ? String(rpcError.code) : UNKNOWN_VALUE;
+		const message = isRecord(rpcError) && typeof rpcError.message === "string" ? normalizeWhitespace(rpcError.message) : "Unknown JSON-RPC error";
+		throw new WebToolError("json_rpc_error", `Parallel Search MCP JSON-RPC error ${code}: ${message}`);
+	}
+
+	if (!isRecord(envelope.result)) throw new WebToolError("protocol_error", "Parallel Search MCP response did not contain a JSON-RPC result object.");
+	const result = envelope.result;
+	if ("isError" in result && typeof result.isError !== "boolean") throw new WebToolError("invalid_response", "Parallel Search MCP result contained a non-boolean isError field.");
+	if (result.isError === true) {
+		const errorText = Array.isArray(result.content)
+			? result.content.find((item) => isRecord(item) && typeof item.text === "string")
+			: undefined;
+		const message = isRecord(errorText) && typeof errorText.text === "string" ? normalizeWhitespace(errorText.text) : "Unknown MCP tool error";
+		throw new WebToolError("mcp_tool_error", `Parallel Search MCP tool error: ${message}`);
+	}
+	if ("structuredContent" in result) {
+		if (isExpectedResponse(result.structuredContent)) return result.structuredContent;
+		throw new WebToolError("invalid_response", "Parallel Search MCP structuredContent did not match the expected response schema.");
+	}
+
+	if (!Array.isArray(result.content)) throw new WebToolError("invalid_response", "Parallel Search MCP result contained neither valid structuredContent nor a content array.");
+	const textItem = result.content.find((item) => isRecord(item) && typeof item.text === "string");
+	if (!isRecord(textItem) || typeof textItem.text !== "string") throw new WebToolError("invalid_response", "Parallel Search MCP result did not contain textual response data.");
+	const parsedText = parseJsonValue(textItem.text, "invalid_response", "Parallel Search MCP tool content");
+	if (!isExpectedResponse(parsedText)) throw new WebToolError("invalid_response", "Parallel Search MCP tool content did not match the expected response schema.");
+	return parsedText;
+}
+
+function parseSseData(body: string): string[] {
+	const events: string[] = [];
+	let dataLines: string[] = [];
+	const flush = () => {
+		if (dataLines.length) events.push(dataLines.join("\n"));
+		dataLines = [];
+	};
+	for (const line of body.replace(/\r\n?/g, "\n").split("\n")) {
+		if (!line) {
+			flush();
+			continue;
+		}
+		if (line === "data") dataLines.push("");
+		else if (line.startsWith("data:")) dataLines.push(line.slice(5).replace(/^ /, ""));
+	}
+	flush();
+	return events;
+}
+
+function parseMcpToolResponse<T>(body: string, isExpectedResponse: (value: unknown) => value is T): T {
+	const trimmed = body.trim();
+	if (!trimmed) throw new WebToolError("protocol_error", "Parallel Search MCP returned an empty response body.");
+	if (trimmed.startsWith("{")) return parseMcpPayload(trimmed, isExpectedResponse);
+
+	const events = parseSseData(body).filter((event) => event.trim() && event.trim() !== "[DONE]");
+	if (!events.length) throw new WebToolError("protocol_error", "Parallel Search MCP returned neither JSON nor a usable SSE data event.");
+	let lastProtocolError: WebToolError | undefined;
+	for (const event of events) {
+		try {
+			return parseMcpPayload(event, isExpectedResponse);
+		} catch (error) {
+			if (!(error instanceof WebToolError) || !["protocol_error", "invalid_response"].includes(error.code)) throw error;
+			lastProtocolError = error;
+		}
+	}
+	throw lastProtocolError ?? new WebToolError("protocol_error", "Parallel Search MCP SSE stream did not contain a tool response.");
+}
+
+const normalizeWhitespace = (text: string): string => text.replace(/[\u0000-\u001f\u007f-\u009f]/g, " ").replace(/\s+/g, " ").trim();
+const normalizeMultilineText = (text: string): string => text.replace(/\r\n?/g, "\n").replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f-\u009f]/g, " ").trim();
 const escapeXml = (text: string): string => text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 const tag = (name: string, content: string): string => [`<${name}>`, content, `</${name}>`].join("\n");
 const taggedBlocks = <T>(name: string, items: T[], formatItem: (item: T) => string): string => items.map((item) => tag(name, formatItem(item))).join("\n\n");
@@ -162,7 +295,7 @@ function normalizeUrl(url: string | undefined): string {
 		const parsed = new URL(url);
 		parsed.hash = "";
 		return parsed.toString().replace(/\/$/, "");
-	}) ?? url.trim();
+	}) ?? normalizeWhitespace(url);
 }
 
 const getDomain = (url: string | undefined): string => url ? attempt(() => new URL(url).hostname.replace(/^www\./, "")) ?? UNKNOWN_VALUE : UNKNOWN_VALUE;
@@ -190,7 +323,7 @@ function resultMeta(result: WebResult, fallbackTitle: string, formatText: TextFo
 	return [
 		formatText(normalizeWhitespace(result.title ?? fallbackTitle)),
 		`URL: ${formatText(normalizeUrl(result.url) || UNKNOWN_VALUE)}`,
-		`Date: ${formatText(result.publish_date || NO_DATE_VALUE)}`,
+		`Date: ${formatText(normalizeWhitespace(result.publish_date || NO_DATE_VALUE))}`,
 		`Source: ${formatText(getDomain(result.url))}`,
 	];
 }
@@ -250,7 +383,7 @@ function formatFetchResponse(results: FetchResult[], errors: FetchError[], warni
 
 const displayMetadata = (result: WebResult, fallbackTitle: string, extras: string[] = []): string => [
 	`Title: ${normalizeWhitespace(result.title ?? fallbackTitle)}`,
-	`Date: ${result.publish_date || NO_DATE_VALUE}`,
+	`Date: ${normalizeWhitespace(result.publish_date || NO_DATE_VALUE)}`,
 	...extras,
 	`URL: ${normalizeUrl(result.url) || UNKNOWN_VALUE}`,
 ].join("\n");
@@ -306,6 +439,57 @@ function renderDisplaySections(sections: DisplaySection[], theme: Theme): Compon
 	return container;
 }
 
+const SECRET_PATTERNS: RegExp[] = [
+	/-----BEGIN [A-Z0-9 ]*PRIVATE KEY-----/i,
+	/\b(?:AKIA|ASIA)[A-Z0-9]{16}\b/,
+	/\bgithub_pat_[A-Za-z0-9_]{20,}\b/,
+	/\bgh[pousr]_[A-Za-z0-9]{20,}\b/,
+	/\bsk-[A-Za-z0-9_-]{20,}\b/,
+	/\bxox[a-z]-[A-Za-z0-9-]{20,}\b/i,
+	/\bBearer\s+[A-Za-z0-9._~+/=-]{12,}\b/i,
+	/\beyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\b/,
+	/\b(?:api[_-]?key|access[_-]?token|auth[_-]?token|password|passwd|client[_-]?secret|secret)\b\s*[:=]\s*["']?[^\s"',;]{8,}/i,
+];
+
+function containsUrlUserinfo(text: string): boolean {
+	const candidates = text.match(/https?:\/\/[^\s<>"']+/gi) ?? [];
+	return candidates.some((candidate) => attempt(() => {
+		const parsed = new URL(candidate.replace(/[),.;!?]+$/, ""));
+		return Boolean(parsed.username || parsed.password);
+	}) ?? false);
+}
+
+const containsSecret = (text: string): boolean => SECRET_PATTERNS.some((pattern) => pattern.test(text));
+
+function looksLikeLongCodeOrLog(text: string): boolean {
+	const normalized = text.replace(/\r\n?/g, "\n");
+	const lines = normalized.split("\n");
+	const hasFence = /```|~~~/.test(normalized);
+	const stackLines = lines.filter((line) => /^\s*(?:at\s+\S+|File\s+"[^"]+",\s+line\s+\d+|Caused by:|Traceback \(most recent call last\):)/.test(line)).length;
+	const logLines = lines.filter((line) => /(?:^|\s)(?:TRACE|DEBUG|INFO|WARN|ERROR|FATAL)(?:\s|[:\]])|\b\d{4}-\d{2}-\d{2}[T ][0-9:.+-]+/.test(line)).length;
+	const codeLines = lines.filter((line) => /(?:[{};]|=>|\b(?:class|function|const|let|var|import|export|def|public|private)\b)/.test(line)).length;
+	return (normalized.length >= 300 && hasFence)
+		|| (normalized.length >= 400 && stackLines >= 2)
+		|| (normalized.length >= 500 && logLines >= 3)
+		|| (normalized.length >= 600 && lines.length >= 8 && codeLines >= 4)
+		|| (normalized.length >= 1_200 && (stackLines + logLines + codeLines) >= 3);
+}
+
+function validateOutboundInput(values: Array<[label: string, value: string | undefined]>): void {
+	for (const [label, value] of values) {
+		if (!value) continue;
+		if (containsUrlUserinfo(value)) {
+			throw new WebToolError("input_rejected", `${label} contains a URL with embedded userinfo. Remove the username/password before using a web tool.`);
+		}
+		if (containsSecret(value)) {
+			throw new WebToolError("input_rejected", `${label} appears to contain a credential or secret. Remove it and use a generalized web request.`);
+		}
+		if (looksLikeLongCodeOrLog(value)) {
+			throw new WebToolError("input_rejected", `${label} appears to contain pasted long code or logs. Do not send it verbatim; retry with a generalized objective and short search terms based on the error, symbol, and concept.`);
+		}
+	}
+}
+
 function createMcpHeaders(): Record<string, string> {
 	const apiKey = process.env.PARALLEL_API_KEY?.trim();
 	return {
@@ -326,26 +510,181 @@ function createMcpRequestBody(toolName: string, args: Record<string, unknown>, c
 	});
 }
 
-async function callParallelMcp(body: string, signal?: AbortSignal): Promise<string> {
-	const response = await fetch(PARALLEL_MCP_ENDPOINT, { method: "POST", headers: createMcpHeaders(), body, signal });
-	if (!response.ok) {
-		const retryAfter = response.headers.get("retry-after");
-		throw new Error(`Parallel Search MCP failed: ${response.status} ${response.statusText}.${retryAfter ? ` Retry-After: ${retryAfter}.` : ""}`);
+function parseRetryAfter(value: string | null): number | undefined {
+	if (!value) return undefined;
+	const seconds = Number(value);
+	const delay = Number.isFinite(seconds) && seconds >= 0 ? seconds * 1_000 : Date.parse(value) - Date.now();
+	return Number.isFinite(delay) && delay >= 0 ? Math.min(delay, MAX_RETRY_DELAY_MS) : undefined;
+}
+
+function createAbortScope(callerSignal: AbortSignal | undefined, timeoutMs: number): {
+	signal: AbortSignal;
+	callerSignal?: AbortSignal;
+	didTimeout: () => boolean;
+	cleanup: () => void;
+} {
+	const controller = new AbortController();
+	let timedOut = false;
+	const onCallerAbort = () => controller.abort(callerSignal?.reason);
+	if (callerSignal?.aborted) onCallerAbort();
+	else callerSignal?.addEventListener("abort", onCallerAbort, { once: true });
+	const timer = setTimeout(() => {
+		timedOut = true;
+		controller.abort(new Error(`Web request exceeded its ${timeoutMs}ms timeout.`));
+	}, timeoutMs);
+	return {
+		signal: controller.signal,
+		callerSignal,
+		didTimeout: () => timedOut,
+		cleanup: () => {
+			clearTimeout(timer);
+			callerSignal?.removeEventListener("abort", onCallerAbort);
+		},
+	};
+}
+
+function throwAbortReason(scope: ReturnType<typeof createAbortScope>, timeoutMs: number): never {
+	if (scope.callerSignal?.aborted) {
+		const reason = scope.callerSignal.reason;
+		throw reason instanceof Error ? reason : new DOMException("Web request aborted by caller.", "AbortError");
 	}
-	return response.text();
+	if (scope.didTimeout()) throw new WebToolError("timeout", `Parallel Search MCP did not complete within ${Math.round(timeoutMs / 1_000)} seconds.`);
+	throw new WebToolError("transport_error", "Parallel Search MCP request was aborted unexpectedly.");
 }
 
-async function callMcpTool<T>(toolName: string, args: Record<string, unknown>, guard: (value: unknown) => value is T, signal?: AbortSignal, ctx?: ExtensionContext): Promise<Partial<T>> {
-	const body = await callParallelMcp(createMcpRequestBody(toolName, args, ctx), signal);
-	return parseMcpToolResponse(body, guard) ?? {};
+const TRANSIENT_NETWORK_CODES = new Set([
+	"EAI_AGAIN",
+	"ECONNREFUSED",
+	"ECONNRESET",
+	"EHOSTUNREACH",
+	"ENETDOWN",
+	"ENETUNREACH",
+	"ETIMEDOUT",
+	"UND_ERR_CONNECT_TIMEOUT",
+	"UND_ERR_SOCKET",
+]);
+
+function getErrorCode(error: unknown): string | undefined {
+	if (!isRecord(error)) return undefined;
+	if (typeof error.code === "string") return error.code;
+	return getErrorCode(error.cause);
 }
 
-async function searchWeb({ objective, search_queries }: SearchParams, signal?: AbortSignal, ctx?: ExtensionContext): Promise<Required<Pick<SearchResponse, "results">> & Pick<SearchResponse, "warnings">> {
-	const response = await callMcpTool<SearchResponse>(SEARCH_TOOL_NAME, { objective, search_queries, session_id: SESSION_ID }, isSearchResponse, signal, ctx);
-	return { results: arrayOrEmpty(response.results), warnings: response.warnings };
+function normalizeTransportError(error: unknown): WebToolError {
+	if (error instanceof WebToolError) return error;
+	const code = getErrorCode(error);
+	const retryable = code !== undefined && TRANSIENT_NETWORK_CODES.has(code);
+	const detail = error instanceof Error ? normalizeWhitespace(error.message) : "Unknown network failure";
+	return new WebToolError("transport_error", `Parallel Search MCP transport failed: ${detail}`, { cause: error, retryable });
 }
 
-async function fetchWeb(params: FetchParams, signal?: AbortSignal, ctx?: ExtensionContext): Promise<Required<Pick<FetchResponse, "results" | "errors">> & Pick<FetchResponse, "warnings">> {
+function statusError(response: Response): WebToolError {
+	const status = response.status;
+	const retryable = status === 429 || [502, 503, 504].includes(status);
+	const code: WebToolErrorCode = status === 401 || status === 403 ? "authentication_error" : status === 429 ? "rate_limited" : "http_status";
+	const retryAfterMs = parseRetryAfter(response.headers.get("retry-after"));
+	return new WebToolError(code, `Parallel Search MCP returned HTTP ${status} ${response.statusText || "error"}.${retryAfterMs === undefined ? "" : ` Retry-After delay is ${retryAfterMs}ms (maximum ${MAX_RETRY_DELAY_MS}ms).`}`, {
+		status,
+		retryAfterMs,
+		retryable,
+	});
+}
+
+async function readResponseWithLimit(response: Response, maxBytes: number): Promise<string> {
+	if (!response.body) return "";
+	const reader = response.body.getReader();
+	const decoder = new TextDecoder();
+	let totalBytes = 0;
+	const output: string[] = [];
+	try {
+		while (true) {
+			const { done, value } = await reader.read();
+			if (done) break;
+			totalBytes += value.byteLength;
+			if (totalBytes > maxBytes) {
+				await reader.cancel().catch(() => undefined);
+				throw new WebToolError("response_too_large", `Parallel Search MCP response exceeded the ${formatSize(maxBytes)} raw-body limit.`);
+			}
+			output.push(decoder.decode(value, { stream: true }));
+		}
+		output.push(decoder.decode());
+		return output.join("");
+	} finally {
+		reader.releaseLock();
+	}
+}
+
+async function waitForRetry(delayMs: number, signal: AbortSignal): Promise<void> {
+	if (signal.aborted) throw signal.reason;
+	await new Promise<void>((resolve, reject) => {
+		const timer = setTimeout(() => {
+			signal.removeEventListener("abort", onAbort);
+			resolve();
+		}, delayMs);
+		const onAbort = () => {
+			clearTimeout(timer);
+			reject(signal.reason);
+		};
+		signal.addEventListener("abort", onAbort, { once: true });
+	});
+}
+
+async function callParallelMcp(body: string, options: { signal?: AbortSignal; timeoutMs: number; maxBytes: number }): Promise<string> {
+	const scope = createAbortScope(options.signal, options.timeoutMs);
+	try {
+		for (let attemptNumber = 0; attemptNumber <= MAX_RETRIES; attemptNumber += 1) {
+			try {
+				const response = await fetch(PARALLEL_MCP_ENDPOINT, { method: "POST", headers: createMcpHeaders(), body, signal: scope.signal });
+				if (!response.ok) {
+					void response.body?.cancel().catch(() => undefined);
+					throw statusError(response);
+				}
+				return await readResponseWithLimit(response, options.maxBytes);
+			} catch (error) {
+				if (scope.signal.aborted) throwAbortReason(scope, options.timeoutMs);
+				const normalized = normalizeTransportError(error);
+				if (!normalized.retryable || attemptNumber >= MAX_RETRIES) throw normalized;
+				const exponentialDelay = Math.min(RETRY_BASE_DELAY_MS * (2 ** attemptNumber), MAX_RETRY_DELAY_MS);
+				const jitter = Math.floor(Math.random() * Math.min(250, exponentialDelay / 2 + 1));
+				const retryDelay = normalized.retryAfterMs ?? Math.min(exponentialDelay + jitter, MAX_RETRY_DELAY_MS);
+				try {
+					await waitForRetry(retryDelay, scope.signal);
+				} catch {
+					throwAbortReason(scope, options.timeoutMs);
+				}
+			}
+		}
+		throw new WebToolError("transport_error", "Parallel Search MCP exhausted its retry loop unexpectedly.");
+	} finally {
+		scope.cleanup();
+	}
+}
+
+async function callMcpTool<T>(
+	toolName: string,
+	args: Record<string, unknown>,
+	guard: (value: unknown) => value is T,
+	options: { signal?: AbortSignal; ctx?: ExtensionContext; timeoutMs: number; maxBytes: number },
+): Promise<T> {
+	const body = await callParallelMcp(createMcpRequestBody(toolName, args, options.ctx), options);
+	return parseMcpToolResponse(body, guard);
+}
+
+async function searchWeb({ objective, search_queries }: SearchParams, sessionId: string, signal?: AbortSignal, ctx?: ExtensionContext): Promise<Required<Pick<SearchResponse, "results">> & Pick<SearchResponse, "warnings">> {
+	validateOutboundInput([
+		["objective", objective],
+		...search_queries.map((query, index) => [`search_queries[${index}]`, query] as [string, string]),
+	]);
+	const response = await callMcpTool<SearchResponse>(SEARCH_TOOL_NAME, { objective, search_queries, session_id: sessionId }, isSearchResponse, {
+		signal,
+		ctx,
+		timeoutMs: SEARCH_TIMEOUT_MS,
+		maxBytes: SEARCH_RESPONSE_MAX_BYTES,
+	});
+	return { results: response.results, warnings: response.warnings };
+}
+
+async function fetchWeb(params: FetchParams, sessionId: string, signal?: AbortSignal, ctx?: ExtensionContext): Promise<Required<Pick<FetchResponse, "results" | "errors">> & Pick<FetchResponse, "warnings">> {
 	if (!isValidHttpUrl(params.url)) {
 		return {
 			results: [],
@@ -355,14 +694,24 @@ async function fetchWeb(params: FetchParams, signal?: AbortSignal, ctx?: Extensi
 	}
 
 	const { url, objective, search_queries, full_content } = params;
+	validateOutboundInput([
+		["url", url],
+		["objective", objective],
+		...(search_queries ?? []).map((query, index) => [`search_queries[${index}]`, query] as [string, string]),
+	]);
 	const response = await callMcpTool<FetchResponse>(FETCH_TOOL_NAME, {
 		urls: [url],
-		session_id: SESSION_ID,
+		session_id: sessionId,
 		...(objective ? { objective } : {}),
 		...(search_queries?.length ? { search_queries } : {}),
 		...(full_content === undefined ? {} : { full_content }),
-	}, isFetchResponse, signal, ctx);
-	return { results: arrayOrEmpty(response.results), errors: arrayOrEmpty(response.errors), warnings: response.warnings };
+	}, isFetchResponse, {
+		signal,
+		ctx,
+		timeoutMs: FETCH_TIMEOUT_MS,
+		maxBytes: FETCH_RESPONSE_MAX_BYTES,
+	});
+	return { results: response.results, errors: response.errors, warnings: response.warnings };
 }
 
 const renderCollapsedResult = (text: string, theme: Theme): Text =>
@@ -382,7 +731,7 @@ async function truncateFormattedOutput(text: string, tempPrefix: string): Promis
 		`[Output truncated: showing ${truncation.outputLines} of ${truncation.totalLines} lines`,
 		`(${formatSize(truncation.outputBytes)} of ${formatSize(truncation.totalBytes)}).`,
 		`${truncatedLines} lines (${formatSize(truncatedBytes)}) omitted.`,
-		`Full output saved to: ${tempFile}]`,
+		`Full output saved to: ${tempFile}. This Pi web temp file is an explicitly permitted read-only tool artifact; do not modify it.]`,
 	].join(" ");
 
 	return { text: `${truncation.content}\n\n${truncatedNotice}`, truncation, fullOutputPath: tempFile };
@@ -426,7 +775,7 @@ function prepareFetchArguments(args: unknown): FetchParams {
 
 function renderCallTitle(name: string, value: string, theme: Theme, context: { lastComponent?: unknown }): Text {
 	const text = context.lastComponent instanceof Text ? context.lastComponent : new Text("", 0, 0);
-	text.setText(theme.fg("toolTitle", `${theme.bold(name)} ${value}`));
+	text.setText(theme.fg("toolTitle", `${theme.bold(name)} ${normalizeWhitespace(value)}`));
 	return text;
 }
 
@@ -450,13 +799,13 @@ function renderToolResult<D>(
 	return expanded ? new Text(`\n${displayText}`, 0, 0) : renderCollapsedResult(displayText, theme);
 }
 
-const webSearchTool = defineTool<typeof WEB_SEARCH_PARAMS_SCHEMA, SearchDetails | undefined>({
+const createWebSearchTool = (getSessionId: () => string) => defineTool<typeof WEB_SEARCH_PARAMS_SCHEMA, SearchDetails | undefined>({
 	name: SEARCH_TOOL_NAME,
 	label: "Web Search",
 	description: SEARCH_TOOL_DESCRIPTION,
 	parameters: WEB_SEARCH_PARAMS_SCHEMA,
 	async execute(_toolCallId, params, signal, _onUpdate, ctx) {
-		const response = await searchWeb(params, signal, ctx);
+		const response = await searchWeb(params, getSessionId(), signal, ctx);
 		if (!response.results.length) {
 			return toolResult(NO_SEARCH_RESULTS_MESSAGE, response.warnings?.length ? { results: [], warnings: response.warnings } : undefined);
 		}
@@ -470,14 +819,14 @@ const webSearchTool = defineTool<typeof WEB_SEARCH_PARAMS_SCHEMA, SearchDetails 
 	renderResult: (result, { expanded }, theme) => renderToolResult(result, expanded, theme, getSearchDetails, searchDetailSections, true),
 });
 
-const webFetchTool = defineTool<typeof WEB_FETCH_PARAMS_SCHEMA, FetchDetails | undefined>({
+const createWebFetchTool = (getSessionId: () => string) => defineTool<typeof WEB_FETCH_PARAMS_SCHEMA, FetchDetails | undefined>({
 	name: FETCH_TOOL_NAME,
 	label: "Web Fetch",
 	description: FETCH_TOOL_DESCRIPTION,
 	parameters: WEB_FETCH_PARAMS_SCHEMA,
 	prepareArguments: prepareFetchArguments,
 	async execute(_toolCallId, params, signal, _onUpdate, ctx) {
-		const response = await fetchWeb(params, signal, ctx);
+		const response = await fetchWeb(params, getSessionId(), signal, ctx);
 		if (!response.results.length && !response.errors.length) {
 			return toolResult(NO_FETCH_RESULTS_MESSAGE, response.warnings?.length ? { results: [], errors: [], warnings: response.warnings } : undefined);
 		}
@@ -496,6 +845,19 @@ const webFetchTool = defineTool<typeof WEB_FETCH_PARAMS_SCHEMA, FetchDetails | u
 });
 
 export default function (pi: ExtensionAPI) {
-	pi.registerTool(webSearchTool);
-	pi.registerTool(webFetchTool);
+	let sessionId: string | undefined;
+	const getSessionId = () => {
+		if (!sessionId) throw new WebToolError("session_unavailable", "Web tools cannot run outside an active Pi session.");
+		return sessionId;
+	};
+
+	pi.on("session_start", () => {
+		sessionId = `pi_${randomUUID()}`;
+	});
+	pi.on("session_shutdown", () => {
+		sessionId = undefined;
+	});
+
+	pi.registerTool(createWebSearchTool(getSessionId));
+	pi.registerTool(createWebFetchTool(getSessionId));
 }

@@ -1,7 +1,6 @@
 import { getAgentDir, type ExtensionAPI, type ExtensionContext } from "@earendil-works/pi-coding-agent";
 import { readdir, readFile } from "node:fs/promises";
 import { join, resolve } from "node:path";
-import { appendPrompt, buildSystemPrompt } from "./system-prompt.ts";
 
 const MODEL_PROMPTS_DIR = "model-prompts";
 
@@ -195,31 +194,21 @@ export default function systemPromptOverridesExtension(pi: ExtensionAPI) {
 
 		if (model) {
 			const modelKey = `${model.provider}/${model.id}`;
-			const roots = [resolve(getAgentDir(), MODEL_PROMPTS_DIR)];
+			const root = resolve(getAgentDir(), MODEL_PROMPTS_DIR);
+			const promptFiles = await loadModelPromptFiles(root, ctx);
 
-			if (ctx.isProjectTrusted()) {
-				roots.push(resolve(ctx.cwd, ".pi", MODEL_PROMPTS_DIR));
-			}
-
-			for (const root of roots) {
-				const promptFiles = await loadModelPromptFiles(root, ctx);
-				for (const promptFile of promptFiles) {
-					if (promptFile.models.includes(modelKey)) {
-						matchedBodies.push(promptFile.body);
-					}
+			for (const promptFile of promptFiles) {
+				if (promptFile.models.includes(modelKey)) {
+					matchedBodies.push(promptFile.body);
 				}
 			}
 		}
 
 		const additionalPrompt = matchedBodies.join("\n\n");
+		if (!additionalPrompt) return;
 
 		return {
-			systemPrompt: buildSystemPrompt({
-				...event.systemPromptOptions,
-				appendSystemPrompt: additionalPrompt
-					? appendPrompt(event.systemPromptOptions.appendSystemPrompt, additionalPrompt)
-					: event.systemPromptOptions.appendSystemPrompt,
-			}),
+			systemPrompt: [event.systemPrompt.trimEnd(), additionalPrompt].filter(Boolean).join("\n\n"),
 		};
 	});
 }

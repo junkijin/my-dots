@@ -2,6 +2,8 @@ import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import { CURSOR_MARKER, Editor, SettingsList, TUI, isFocusable, type Component, type Focusable } from "@earendil-works/pi-tui";
 
 const PATCH_STATE_KEY = "__junkijin_pi_no_software_cursor_patch__";
+const PATCHED_METHOD_KEY = "__junkijin_pi_hardware_cursor_patch_owner__";
+const PATCH_OWNER = "junkijin.hardware-cursor/v1";
 const REVERSE_SGR = "\x1b\\[(?:\\d+;)*0*7(?:;\\d+)*m";
 const SOFTWARE_CURSOR_START = "\x1b[7m";
 const MARKER = escapeRegExp(CURSOR_MARKER);
@@ -33,6 +35,16 @@ type CursorPatchState = {
 	restore: () => void;
 };
 
+type PatchAcquisition = { acquired: true } | { acquired: false; reason: string };
+
+type PreparedPatch = {
+	label: string;
+	current: () => unknown;
+	apply: () => void;
+	restore: () => void;
+	replacement: Function;
+};
+
 function escapeRegExp(value: string): string {
 	return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
@@ -42,7 +54,46 @@ function getPatchStateStore(): typeof globalThis & { [PATCH_STATE_KEY]?: CursorP
 }
 
 function getPatchState(): CursorPatchState | undefined {
-	return getPatchStateStore()[PATCH_STATE_KEY];
+	const state = getPatchStateStore()[PATCH_STATE_KEY];
+	return isCursorPatchState(state) ? state : undefined;
+}
+
+function isCursorPatchState(value: unknown): value is CursorPatchState {
+	if (!value || typeof value !== "object") return false;
+	const state = value as Partial<CursorPatchState>;
+	return (
+		typeof state.refCount === "number" &&
+		state.focusedSettingsLists instanceof WeakSet &&
+		state.focusedSettingsListByTui instanceof WeakMap &&
+		typeof state.restore === "function"
+	);
+}
+
+function validatePatchTarget(target: object, methodName: string, label: string): string | undefined {
+	const descriptor = Object.getOwnPropertyDescriptor(target, methodName);
+	if (!descriptor || typeof descriptor.value !== "function") {
+		return `${label} is unavailable in this pi-tui version`;
+	}
+	if (!descriptor.writable) {
+		return `${label} is not writable`;
+	}
+
+	const method = descriptor.value as Function & { [PATCHED_METHOD_KEY]?: unknown };
+	if (method[PATCHED_METHOD_KEY] !== undefined || method.name !== methodName) {
+		return `${label} appears to have already been patched`;
+	}
+
+	return undefined;
+}
+
+function markPatchedMethod<T extends Function>(method: T): T {
+	Object.defineProperty(method, PATCHED_METHOD_KEY, {
+		value: PATCH_OWNER,
+		configurable: false,
+		enumerable: false,
+		writable: false,
+	});
+	return method;
 }
 
 function stripReverseVideo(sgr: string): string {
@@ -139,47 +190,127 @@ function wrapTuiSetFocus(setFocus: TUILike["setFocus"]): TUILike["setFocus"] {
 	};
 }
 
-function acquirePatch(): void {
+function acquirePatch(): PatchAcquisition {
 	const store = getPatchStateStore();
 	const existing = store[PATCH_STATE_KEY];
-	if (existing) {
+	if (existing !== undefined) {
+		if (!isCursorPatchState(existing)) {
+			return { acquired: false, reason: "the global patch state is owned by another extension" };
+		}
 		existing.refCount += 1;
-		return;
+		return { acquired: true };
 	}
 
 	const editorProto = Editor.prototype as EditorLike;
 	const settingsListProto = SettingsList.prototype as SettingsListLike;
 	const tuiProto = TUI.prototype as unknown as TUILike;
+	const validationError = [
+		validatePatchTarget(editorProto, "render", "Editor.render"),
+		validatePatchTarget(settingsListProto, "render", "SettingsList.render"),
+		validatePatchTarget(tuiProto, "extractCursorPosition", "TUI.extractCursorPosition"),
+		validatePatchTarget(tuiProto, "setFocus", "TUI.setFocus"),
+	].find((error): error is string => error !== undefined);
+	if (validationError) return { acquired: false, reason: validationError };
+
 	const originalEditorRender = editorProto.render;
 	const originalSettingsListRender = settingsListProto.render;
 	const originalExtractCursorPosition = tuiProto.extractCursorPosition;
 	const originalTuiSetFocus = tuiProto.setFocus;
-	const editorRender = wrapEditorRender(originalEditorRender);
-	const settingsListRender = wrapSettingsListRender(originalSettingsListRender);
-	const extractCursorPosition = wrapCursorExtraction(originalExtractCursorPosition);
-	const tuiSetFocus = wrapTuiSetFocus(originalTuiSetFocus);
-
-	store[PATCH_STATE_KEY] = {
+	const editorRender = markPatchedMethod(wrapEditorRender(originalEditorRender));
+	const settingsListRender = markPatchedMethod(wrapSettingsListRender(originalSettingsListRender));
+	const extractCursorPosition = markPatchedMethod(wrapCursorExtraction(originalExtractCursorPosition));
+	const tuiSetFocus = markPatchedMethod(wrapTuiSetFocus(originalTuiSetFocus));
+	const patches: PreparedPatch[] = [
+		{
+			label: "Editor.render",
+			current: () => editorProto.render,
+			apply: () => {
+				editorProto.render = editorRender;
+			},
+			restore: () => {
+				editorProto.render = originalEditorRender;
+			},
+			replacement: editorRender,
+		},
+		{
+			label: "SettingsList.render",
+			current: () => settingsListProto.render,
+			apply: () => {
+				settingsListProto.render = settingsListRender;
+			},
+			restore: () => {
+				settingsListProto.render = originalSettingsListRender;
+			},
+			replacement: settingsListRender,
+		},
+		{
+			label: "TUI.extractCursorPosition",
+			current: () => tuiProto.extractCursorPosition,
+			apply: () => {
+				tuiProto.extractCursorPosition = extractCursorPosition;
+			},
+			restore: () => {
+				tuiProto.extractCursorPosition = originalExtractCursorPosition;
+			},
+			replacement: extractCursorPosition,
+		},
+		{
+			label: "TUI.setFocus",
+			current: () => tuiProto.setFocus,
+			apply: () => {
+				tuiProto.setFocus = tuiSetFocus;
+			},
+			restore: () => {
+				tuiProto.setFocus = originalTuiSetFocus;
+			},
+			replacement: tuiSetFocus,
+		},
+	];
+	const patchState: CursorPatchState = {
 		refCount: 1,
 		focusedSettingsLists: new WeakSet(),
 		focusedSettingsListByTui: new WeakMap(),
 		restore() {
-			if (editorProto.render === editorRender) editorProto.render = originalEditorRender;
-			if (settingsListProto.render === settingsListRender) settingsListProto.render = originalSettingsListRender;
-			if (tuiProto.extractCursorPosition === extractCursorPosition) tuiProto.extractCursorPosition = originalExtractCursorPosition;
-			if (tuiProto.setFocus === tuiSetFocus) tuiProto.setFocus = originalTuiSetFocus;
+			for (const patch of [...patches].reverse()) {
+				if (patch.current() !== patch.replacement) continue;
+				try {
+					patch.restore();
+				} catch {
+					// A later extension may have made the prototype non-writable. Do not
+					// disturb methods that are no longer exactly our wrappers.
+				}
+			}
 		},
 	};
 
-	editorProto.render = editorRender;
-	settingsListProto.render = settingsListRender;
-	tuiProto.extractCursorPosition = extractCursorPosition;
-	tuiProto.setFocus = tuiSetFocus;
+	const applied: PreparedPatch[] = [];
+	try {
+		store[PATCH_STATE_KEY] = patchState;
+		for (const patch of patches) {
+			applied.push(patch);
+			patch.apply();
+			if (patch.current() !== patch.replacement) throw new Error(`failed to install ${patch.label}`);
+		}
+	} catch (error) {
+		for (const patch of applied.reverse()) {
+			if (patch.current() !== patch.replacement) continue;
+			try {
+				patch.restore();
+			} catch {
+				// Best-effort rollback; the warning below keeps the failure visible.
+			}
+		}
+		delete store[PATCH_STATE_KEY];
+		const reason = error instanceof Error ? error.message : "unknown prototype assignment failure";
+		return { acquired: false, reason };
+	}
+
+	return { acquired: true };
 }
 
 function releasePatch(): void {
 	const store = getPatchStateStore();
-	const patchState = store[PATCH_STATE_KEY];
+	const patchState = getPatchState();
 	if (!patchState) return;
 
 	patchState.refCount -= 1;
@@ -190,9 +321,14 @@ function releasePatch(): void {
 }
 
 export default function (pi: ExtensionAPI) {
-	acquirePatch();
+	const acquisition = acquirePatch();
+	if (!acquisition.acquired) {
+		pi.on("session_start", (_event, ctx) => {
+			ctx.ui.notify(`Hardware cursor patch disabled: ${acquisition.reason}`, "warning");
+		});
+	}
 
 	pi.on("session_shutdown", async () => {
-		releasePatch();
+		if (acquisition.acquired) releasePatch();
 	});
 }

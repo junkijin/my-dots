@@ -1,6 +1,6 @@
 ---
 name: clarify-requirements
-description: Turn an ambiguous or incomplete request for a codebase change into a clear, evidence-backed, human-reviewable definition of what the change must accomplish. Use this skill whenever resolving intent, current-state context, target behavior, scope, constraints, acceptance criteria, or relevant UI expectations would make subsequent technical work materially clearer. Maintain the result as the canonical requirements spec while leaving implementation choices to later work.
+description: Create or refine a clear, evidence-backed, human-reviewable requirements specification for a codebase change. Use when the user explicitly requests requirements clarification or a requirements spec, or when a material ambiguity truly blocks implementation and could change observable behavior, scope, constraints, or acceptance criteria. Do not use for straightforward implementation, diagnosis, code review, verification, or planning when the requirements are already sufficient. Maintain the result as the canonical requirements spec while leaving implementation choices to later work.
 ---
 
 # Clarify Requirements

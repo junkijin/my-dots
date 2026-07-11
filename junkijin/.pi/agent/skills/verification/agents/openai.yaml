@@ -1,0 +1,4 @@
+interface:
+  display_name: "Verification"
+  short_description: "Verify code behavior with reproducible evidence"
+  default_prompt: "Use $verification to verify the requested behavior and report evidence."
