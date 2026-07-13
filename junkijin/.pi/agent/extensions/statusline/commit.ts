@@ -5,13 +5,11 @@ const GIT_TIMEOUT_MS = 3000;
 export interface GitStatusSnapshot {
 	branch: string | null;
 	dirtyFileCount: number;
-	latestCommitSubject: string | null;
 }
 
 const EMPTY_GIT_STATUS: GitStatusSnapshot = {
 	branch: null,
 	dirtyFileCount: 0,
-	latestCommitSubject: null,
 };
 
 /**
@@ -83,28 +81,15 @@ export class GitStatusCache {
 	}
 
 	private async resolveSnapshot(signal: AbortSignal): Promise<GitStatusSnapshot | null> {
-		const [statusResult, commitResult] = await Promise.all([
-			this.pi.exec(
-				"git",
-				["--no-optional-locks", "status", "--porcelain=v2", "--branch", "-z", "--untracked-files=all"],
-				{ cwd: this.cwd, signal, timeout: GIT_TIMEOUT_MS },
-			),
-			this.pi.exec("git", ["--no-optional-locks", "log", "-1", "--format=%s"], {
-				cwd: this.cwd,
-				signal,
-				timeout: GIT_TIMEOUT_MS,
-			}),
-		]);
+		const statusResult = await this.pi.exec(
+			"git",
+			["--no-optional-locks", "status", "--porcelain=v2", "--branch", "-z", "--untracked-files=all"],
+			{ cwd: this.cwd, signal, timeout: GIT_TIMEOUT_MS },
+		);
 
 		if (signal.aborted || statusResult.killed || statusResult.code !== 0) return null;
 
-		const { branch, dirtyFileCount } = parsePorcelainStatus(statusResult.stdout);
-		const latestCommitSubject =
-			!commitResult.killed && commitResult.code === 0
-				? (commitResult.stdout.split(/\r?\n/, 1)[0]?.trim() || null)
-				: null;
-
-		return { branch, dirtyFileCount, latestCommitSubject };
+		return parsePorcelainStatus(statusResult.stdout);
 	}
 }
 
@@ -128,9 +113,5 @@ function parsePorcelainStatus(output: string): Pick<GitStatusSnapshot, "branch" 
 }
 
 function sameSnapshot(left: GitStatusSnapshot, right: GitStatusSnapshot): boolean {
-	return (
-		left.branch === right.branch &&
-		left.dirtyFileCount === right.dirtyFileCount &&
-		left.latestCommitSubject === right.latestCommitSubject
-	);
+	return left.branch === right.branch && left.dirtyFileCount === right.dirtyFileCount;
 }

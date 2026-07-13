@@ -3,9 +3,6 @@ import { basename } from "node:path";
 import type { StatuslineRenderState } from "./types.js";
 import { compactWhitespace, joinNonEmpty } from "./text.js";
 
-const MAX_COMMIT_SUBJECT_CHARACTERS = 30;
-const ELLIPSIS = "…";
-
 export function renderDirectorySegment(
 	ctx: ExtensionContext,
 	gitStatus: StatuslineRenderState["gitStatus"],
@@ -17,11 +14,7 @@ export function renderDirectorySegment(
 		: gitStatus.dirtyFileCount > 0
 			? `dirty:${gitStatus.dirtyFileCount}`
 			: null;
-	const subject = gitStatus.latestCommitSubject
-		? truncateToCharacters(compactWhitespace(gitStatus.latestCommitSubject), MAX_COMMIT_SUBJECT_CHARACTERS)
-		: null;
-
-	return joinNonEmpty([dirName, repository, subject ? `(${subject})` : null]);
+	return joinNonEmpty([dirName, repository]);
 }
 
 export function renderModelSegment(ctx: ExtensionContext): string {
@@ -49,12 +42,4 @@ export function renderMainLeftSegment(state: Pick<StatuslineRenderState, "ctx" |
 
 export function renderMainRightSegment(state: Pick<StatuslineRenderState, "pi" | "ctx">): string {
 	return joinNonEmpty([renderContextUsageSegment(state.ctx), renderModelThinkingSegment(state)]);
-}
-
-function truncateToCharacters(text: string, maxCharacters: number): string {
-	const characters = Array.from(text);
-	if (characters.length <= maxCharacters) return text;
-	if (maxCharacters <= ELLIPSIS.length) return ELLIPSIS.slice(0, maxCharacters);
-
-	return characters.slice(0, maxCharacters - ELLIPSIS.length).join("") + ELLIPSIS;
 }
