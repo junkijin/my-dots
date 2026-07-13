@@ -1,6 +1,7 @@
 import { getAgentDir, type ExtensionAPI, type ExtensionContext } from "@earendil-works/pi-coding-agent";
 import { readdir, readFile } from "node:fs/promises";
 import { join, resolve } from "node:path";
+import { appendPrompt, buildSystemPrompt } from "./system-prompt.ts";
 
 const MODEL_PROMPTS_DIR = "model-prompts";
 
@@ -205,10 +206,14 @@ export default function systemPromptOverridesExtension(pi: ExtensionAPI) {
 		}
 
 		const additionalPrompt = matchedBodies.join("\n\n");
-		if (!additionalPrompt) return;
 
 		return {
-			systemPrompt: [event.systemPrompt.trimEnd(), additionalPrompt].filter(Boolean).join("\n\n"),
+			systemPrompt: buildSystemPrompt({
+				...event.systemPromptOptions,
+				appendSystemPrompt: additionalPrompt
+					? appendPrompt(event.systemPromptOptions.appendSystemPrompt, additionalPrompt)
+					: event.systemPromptOptions.appendSystemPrompt,
+			}),
 		};
 	});
 }
