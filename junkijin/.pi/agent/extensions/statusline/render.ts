@@ -1,10 +1,10 @@
-import { renderLeftPriorityLine, renderRightPriorityLine } from "./layout.js";
+import { renderRightPriorityLine } from "./layout.js";
 import { renderMainLeftSegment, renderMainRightSegment } from "./segments.js";
 import { renderExtensionStatuses } from "./statuses.js";
 import type { StatuslineRenderState } from "./types.js";
 
 export function renderStatusline(state: StatuslineRenderState): string[] {
-	const mainLine = renderLeftPriorityLine(
+	const mainLine = renderRightPriorityLine(
 		renderMainLeftSegment(state),
 		renderMainRightSegment(state),
 		state.width,

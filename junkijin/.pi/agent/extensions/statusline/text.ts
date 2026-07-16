@@ -26,10 +26,6 @@ export function compactWhitespace(text: string): string {
 	return sanitizeTerminalText(text).replace(/\s+/g, " ").trim();
 }
 
-export function joinNonEmpty(parts: Array<string | null | undefined>, separator = SEP): string {
-	return parts.filter((part): part is string => Boolean(part)).join(separator);
-}
-
 /**
  * Remove terminal control data from repository- and extension-controlled text.
  * Theme ANSI is added only after this function has processed the plain data.
