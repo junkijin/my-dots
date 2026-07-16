@@ -1,4 +1,0 @@
-interface:
-  display_name: "Planning"
-  short_description: "Create codebase-specific implementation plans"
-  default_prompt: "Use $planning to turn the supplied requirements and current codebase evidence into a decision-complete implementation plan."

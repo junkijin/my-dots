@@ -1,4 +1,0 @@
-interface:
-  display_name: "Clarify Requirements"
-  short_description: "Create reviewable code and UI requirements specs"
-  default_prompt: "Use $clarify-requirements to clarify a code change and write a canonical requirements spec, including exact UI requirements when applicable."

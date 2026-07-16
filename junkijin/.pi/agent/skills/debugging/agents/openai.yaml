@@ -1,4 +1,0 @@
-interface:
-  display_name: "Debugging"
-  short_description: "Diagnose failures and fix verified root causes"
-  default_prompt: "Use $debugging to diagnose this failure and fix it if requested."
