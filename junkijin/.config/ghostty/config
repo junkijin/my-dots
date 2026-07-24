@@ -1,0 +1,20 @@
+command = /opt/homebrew/bin/fish
+env = CODEX_TUI_DISABLE_KEYBOARD_ENHANCEMENT=1
+
+font-family = JetBrainsMono Nerd Font
+font-family = D2Coding
+font-feature = +zero, +ss01, +ss19
+font-thicken = true
+font-size = 14
+
+adjust-cell-height = 15%
+adjust-cell-width = -5%
+adjust-font-baseline = -5%
+
+theme = Gruvbox Dark
+window-colorspace = display-p3
+window-padding-balance = true
+
+cursor-style = block
+shell-integration-features = no-cursor
+scrollback-limit = 104857600
