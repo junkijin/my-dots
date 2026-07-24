@@ -1,6 +1,5 @@
-<available_skills>
-<instructions>
-The following skills provide specialized instructions for specific tasks. Use the read tool to load a skill&apos;s file when the task matches its description. When a skill file references a relative path, resolve it against the skill directory (parent of SKILL.md / dirname of the path) and use that absolute path in tool commands.
-</instructions>
+The following skills contain task-specific instructions. When a skill's activation criteria are met, read its SKILL.md before proceeding. Resolve relative paths referenced by SKILL.md from the directory containing that file.
+
+<skills>
 {{SKILL_ELEMENTS}}
-</available_skills>
+</skills>
