@@ -17,4 +17,5 @@ window-padding-balance = true
 
 cursor-style = block
 shell-integration-features = no-cursor
+scroll-to-bottom = keystroke, no-output
 scrollback-limit = 104857600
