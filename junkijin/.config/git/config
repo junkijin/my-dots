@@ -2,7 +2,7 @@
 	excludesFile = ~/.config/git/ignore
 	pager = delta
 [init]
-	defaultBranch = master
+	defaultBranch = trunk
 [column]
 	ui = auto
 [branch]
@@ -64,8 +64,8 @@
 [commit]
 	verbose = true
 	gpgsign = true
-[filter "lfs"]
-	clean = git-lfs clean -- %f
-	smudge = git-lfs smudge -- %f
-	process = git-lfs filter-process
-	required = true
+[gpg]
+	format = ssh
+[user]
+	email = jin@junki.dev
+	name = Junki Jin
