@@ -2,17 +2,18 @@
 set -euo pipefail
 
 TMUX_BIN="/opt/homebrew/bin/tmux"
+SHELL_BIN="/opt/homebrew/bin/fish"
 SESSION_NAME="${KITTY_TMUX_SESSION:-main}"
 TEMP_SESSION_PREFIX="${KITTY_TMUX_TEMP_PREFIX:-tmp}"
 
 # Avoid trying to attach/create tmux from inside an existing tmux client.
 if [[ -n "${TMUX-}" ]]; then
-  exec /bin/zsh -l
+  exec "$SHELL_BIN" -l
 fi
 
 if [[ ! -x "$TMUX_BIN" ]]; then
   print -u2 "tmux not found: $TMUX_BIN"
-  exec /bin/zsh -l
+  exec "$SHELL_BIN" -l
 fi
 
 # If the main session is already attached elsewhere, open a disposable
