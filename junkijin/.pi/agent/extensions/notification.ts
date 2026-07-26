@@ -1,199 +1,70 @@
-/**
- * Pi Notify Extension
- *
- * Sends a native terminal notification when Pi agent is done and waiting for input.
- * Supports multiple terminal protocols:
- * - OSC 777: Ghostty, iTerm2, WezTerm, rxvt-unicode
- * - OSC 99: Kitty
- * - Windows toast: Windows Terminal (WSL)
- * - tmux passthrough: wraps OSC sequences for outer terminal delivery when running inside tmux
- *
- * tmux passthrough requires `allow-passthrough` to be enabled in tmux.
- */
-
-import { getAgentDir, SettingsManager, type ExtensionAPI } from "@earendil-works/pi-coding-agent";
-import { isContextOverflow, isRetryableAssistantError, type AssistantMessage } from "@earendil-works/pi-ai";
+import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 
 const ESC = "\x1b";
-const BEL = "\x07";
 const ST = `${ESC}\\`;
+const TITLE = "Pi need your attention";
 
-const DEFAULT_RETRY_SETTINGS = {
-	enabled: true,
-	maxRetries: 3,
-};
-
-function sanitizeOSCText(value: string): string {
-	return value
-		.replaceAll(ESC, "")
-		.replaceAll(BEL, "")
-		.replaceAll("\u009c", "")
-		.replaceAll("\r", " ")
-		.replaceAll("\n", " ");
+function write(sequence: string): void {
+	if (!process.stdout.isTTY) return;
+	process.stdout.write(process.env.TMUX ? `${ESC}Ptmux;${sequence.replaceAll(ESC, ESC + ESC)}${ST}` : sequence);
 }
 
-function windowsToastScript(title: string, body: string): string {
-	const escapePowerShell = (value: string) => value.replaceAll("'", "''");
+function notifyWindows(body: string): void {
 	const type = "Windows.UI.Notifications";
 	const mgr = `[${type}.ToastNotificationManager, ${type}, ContentType = WindowsRuntime]`;
 	const template = `[${type}.ToastTemplateType]::ToastText01`;
 	const toast = `[${type}.ToastNotification]::new($xml)`;
-	return [
+	const safeBody = body.replaceAll("'", "''");
+	const script = [
 		`${mgr} > $null`,
 		`$xml = [${type}.ToastNotificationManager]::GetTemplateContent(${template})`,
-		`$xml.GetElementsByTagName('text')[0].AppendChild($xml.CreateTextNode('${escapePowerShell(body)}')) > $null`,
-		`[${type}.ToastNotificationManager]::CreateToastNotifier('${escapePowerShell(title)}').Show(${toast})`,
+		`$xml.GetElementsByTagName('text')[0].AppendChild($xml.CreateTextNode('${safeBody}')) > $null`,
+		`[${type}.ToastNotificationManager]::CreateToastNotifier('${TITLE}').Show(${toast})`,
 	].join("; ");
+
+	require("child_process").execFile("powershell.exe", ["-NoProfile", "-Command", script]);
 }
 
-function wrapForTmux(sequence: string): string {
-	if (!process.env.TMUX) {
-		return sequence;
-	}
-
-	return `${ESC}Ptmux;${sequence.replaceAll(ESC, `${ESC}${ESC}`)}${ST}`;
-}
-
-function writeTerminalSequence(sequence: string): void {
-	if (!process.stdout.isTTY) {
+function notify(body: string): void {
+	if (process.env.WT_SESSION) {
+		notifyWindows(body);
 		return;
 	}
 
-	process.stdout.write(wrapForTmux(sequence));
-}
+	const safeBody = body
+		.replaceAll(ESC, "")
+		.replaceAll("\x07", "")
+		.replaceAll("\u009c", "")
+		.replaceAll("\r", " ")
+		.replaceAll("\n", " ");
 
-function notifyOSC777(title: string, body: string): void {
-	const safeTitle = sanitizeOSCText(title);
-	const safeBody = sanitizeOSCText(body);
-	writeTerminalSequence(`${ESC}]777;notify;${safeTitle};${safeBody}${BEL}`);
-}
-
-function notifyOSC99(title: string, body: string): void {
-	const safeTitle = sanitizeOSCText(title);
-	const safeBody = sanitizeOSCText(body);
-
-	// Kitty OSC 99: i=notification id, d=0 means not done yet, p=body for second part
-	writeTerminalSequence(`${ESC}]99;i=1:d=0;${safeTitle}${ST}`);
-	writeTerminalSequence(`${ESC}]99;i=1:p=body;${safeBody}${ST}`);
-}
-
-function notifyWindows(title: string, body: string): void {
-	const { execFile } = require("child_process");
-	execFile("powershell.exe", ["-NoProfile", "-Command", windowsToastScript(title, body)]);
-}
-
-function notify(title: string, body: string): void {
-	if (process.env.WT_SESSION) {
-		notifyWindows(title, body);
-	} else if (process.env.KITTY_WINDOW_ID) {
-		notifyOSC99(title, body);
-	} else {
-		notifyOSC777(title, body);
-	}
-}
-
-function getRetrySettings(cwd: string): typeof DEFAULT_RETRY_SETTINGS {
-	try {
-		const settings = SettingsManager.create(cwd, getAgentDir()).getRetrySettings();
-		return {
-			enabled: settings.enabled,
-			maxRetries: settings.maxRetries,
-		};
-	} catch {
-		return DEFAULT_RETRY_SETTINGS;
-	}
-}
-
-function findLastAssistantMessage(messages: unknown[]): AssistantMessage | undefined {
-	for (let index = messages.length - 1; index >= 0; index--) {
-		const message = messages[index];
-		if (message && typeof message === "object" && "role" in message && message.role === "assistant") {
-			return message as AssistantMessage;
-		}
+	if (process.env.KITTY_WINDOW_ID) {
+		write(`${ESC}]99;i=1:d=0;${TITLE}${ST}`);
+		write(`${ESC}]99;i=1:p=body;${safeBody}${ST}`);
+		return;
 	}
 
-	return undefined;
-}
-
-function getAssistantText(message: AssistantMessage): string {
-	return message.content
-		.filter((content) => content.type === "text")
-		.map((content) => content.text)
-		.join("");
-}
-
-function getNotificationDescription(message: AssistantMessage): string {
-	const chars = Array.from(getAssistantText(message));
-	const preview = chars.slice(0, 30).join("");
-	return chars.length > 30 ? `${preview}...` : preview;
-}
-
-function isRetryableError(message: AssistantMessage, contextWindow: number | undefined): boolean {
-	if (message.stopReason !== "error" || !message.errorMessage) {
-		return false;
-	}
-
-	if (isContextOverflow(message, contextWindow)) {
-		return false;
-	}
-
-	return isRetryableAssistantError(message);
+	write(`${ESC}]777;notify;${TITLE};${safeBody}\x07`);
 }
 
 export default function (pi: ExtensionAPI) {
-	let retryableErrorCount = 0;
+	let description: string | undefined;
 
-	const resetRetryState = () => {
-		retryableErrorCount = 0;
-	};
+	pi.on("agent_end", ({ messages }) => {
+		description = undefined;
+		for (let index = messages.length - 1; index >= 0; index--) {
+			const message = messages[index];
+			if (message.role !== "assistant") continue;
+			if (message.stopReason === "aborted") return;
 
-	const notifyAgentDone = (message: AssistantMessage) => {
-		notify("Pi need your attention", getNotificationDescription(message));
-	};
-
-	pi.on("session_start", resetRetryState);
-	pi.on("session_shutdown", resetRetryState);
-
-	pi.on("message_start", (event) => {
-		if (event.message.role === "user") {
-			resetRetryState();
+			const chars = [...message.content.map((part) => (part.type === "text" ? part.text : "")).join("")];
+			description = chars.slice(0, 30).join("") + (chars.length > 30 ? "..." : "");
+			return;
 		}
 	});
 
-	pi.on("message_end", (event) => {
-		if (event.message.role === "assistant" && event.message.stopReason !== "error") {
-			resetRetryState();
-		}
-	});
-
-	pi.on("agent_end", async (event, ctx) => {
-		const lastAssistant = findLastAssistantMessage(event.messages);
-		if (!lastAssistant) {
-			return;
-		}
-
-		if (lastAssistant.stopReason === "aborted") {
-			resetRetryState();
-			return;
-		}
-
-		if (lastAssistant.stopReason === "error") {
-			const retrySettings = getRetrySettings(ctx.cwd);
-			const contextWindow = ctx.model?.contextWindow;
-			if (retrySettings.enabled && isRetryableError(lastAssistant, contextWindow)) {
-				retryableErrorCount++;
-
-				if (retryableErrorCount <= retrySettings.maxRetries) {
-					return;
-				}
-			}
-
-			resetRetryState();
-			notifyAgentDone(lastAssistant);
-			return;
-		}
-
-		resetRetryState();
-		notifyAgentDone(lastAssistant);
+	pi.on("agent_settled", () => {
+		if (description !== undefined) notify(description);
+		description = undefined;
 	});
 }
