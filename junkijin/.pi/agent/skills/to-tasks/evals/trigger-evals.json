@@ -1,0 +1,125 @@
+{
+  "skill_name": "to-tasks",
+  "queries": [
+    {
+      "id": "p01",
+      "query": "Break this approved technical spec into agent-ready implementation tickets with real blocking dependencies.",
+      "should_trigger": true,
+      "split": "train"
+    },
+    {
+      "id": "p02",
+      "query": "승인된 spec을 여러 에이전트가 수행할 수 있는 task graph로 나눠줘.",
+      "should_trigger": true,
+      "split": "train"
+    },
+    {
+      "id": "p03",
+      "query": "Create one issue per independently verifiable slice, show which can run in parallel, and publish after I approve the graph.",
+      "should_trigger": true,
+      "split": "train"
+    },
+    {
+      "id": "p04",
+      "query": "Turn design issue #144 into implementation tickets, including blockers, migration batches, and an integration gate only if needed.",
+      "should_trigger": true,
+      "split": "train"
+    },
+    {
+      "id": "p05",
+      "query": "The technical design is settled. Plan the prefactor and feature work as fresh-context-sized tasks without assigning agents.",
+      "should_trigger": true,
+      "split": "train"
+    },
+    {
+      "id": "p06",
+      "query": "Decompose this cross-service schema migration into expand, safe consumer migrations, and contract cleanup if atomic delivery isn't safe.",
+      "should_trigger": true,
+      "split": "validation"
+    },
+    {
+      "id": "p07",
+      "query": "Make a dependency DAG from the approved spec and identify the initial frontier for multiple coding agents.",
+      "should_trigger": true,
+      "split": "validation"
+    },
+    {
+      "id": "p08",
+      "query": "spec은 끝났어. 각 ticket에 outcome, acceptance criteria, verification, shared touchpoint를 넣어줘.",
+      "should_trigger": true,
+      "split": "validation"
+    },
+    {
+      "id": "p09",
+      "query": "Please create tracer-bullet tasks from this approved implementation design, but don't force unrelated layers into every slice.",
+      "should_trigger": true,
+      "split": "validation"
+    },
+    {
+      "id": "p10",
+      "query": "to tickets: approved architecture attached, need green mergeable units and blockers",
+      "should_trigger": true,
+      "split": "validation"
+    },
+    {
+      "id": "n01",
+      "query": "Help me decide whether this product should support guest accounts.",
+      "should_trigger": false,
+      "split": "train"
+    },
+    {
+      "id": "n02",
+      "query": "Turn the approved Proposal into a technical spec covering data and errors.",
+      "should_trigger": false,
+      "split": "train"
+    },
+    {
+      "id": "n03",
+      "query": "Implement all of these tasks in parallel and merge them.",
+      "should_trigger": false,
+      "split": "train"
+    },
+    {
+      "id": "n04",
+      "query": "Assign T001 to the frontend agent and monitor progress.",
+      "should_trigger": false,
+      "split": "train"
+    },
+    {
+      "id": "n05",
+      "query": "The spec still says TBD for conflict resolution. Make tickets anyway.",
+      "should_trigger": false,
+      "split": "train"
+    },
+    {
+      "id": "n06",
+      "query": "Fix this one-line null check; no planning needed.",
+      "should_trigger": false,
+      "split": "validation"
+    },
+    {
+      "id": "n07",
+      "query": "Triage the backlog and close duplicates.",
+      "should_trigger": false,
+      "split": "validation"
+    },
+    {
+      "id": "n08",
+      "query": "Review whether the existing task graph's completed code meets the spec.",
+      "should_trigger": false,
+      "split": "validation"
+    },
+    {
+      "id": "n09",
+      "query": "Research the database vendor's online migration support.",
+      "should_trigger": false,
+      "split": "validation"
+    },
+    {
+      "id": "n10",
+      "query": "Write an architectural proposal for replacing the permissions model.",
+      "should_trigger": false,
+      "split": "validation"
+    }
+  ]
+}

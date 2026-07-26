@@ -1,0 +1,125 @@
+{
+  "skill_name": "to-proposal",
+  "queries": [
+    {
+      "id": "p01",
+      "query": "We need to rethink tenant isolation across billing, analytics, and exports, but I don't know the right boundary yet. Help me chart the decisions and get to an RFC.",
+      "should_trigger": true,
+      "split": "train"
+    },
+    {
+      "id": "p02",
+      "query": "이 기능 아이디어를 실제로 뭘 만들지 합의할 수 있는 proposal로 정리하고 싶어. 결정할 게 많아서 여러 세션이 걸릴 것 같아.",
+      "should_trigger": true,
+      "split": "train"
+    },
+    {
+      "id": "p03",
+      "query": "Wayfind this migration for me: three services depend on the legacy identity model and we need research before choosing a destination.",
+      "should_trigger": true,
+      "split": "train"
+    },
+    {
+      "id": "p04",
+      "query": "Can you help us decide whether offline mode belongs in the product and produce an approved direction before anyone writes a spec?",
+      "should_trigger": true,
+      "split": "train"
+    },
+    {
+      "id": "p05",
+      "query": "I have a vague plan for replacing our permissions system. Map the unknowns, delegate independent doc research, and turn the result into a proposal.",
+      "should_trigger": true,
+      "split": "train"
+    },
+    {
+      "id": "p06",
+      "query": "Continue proposal map #418 and work through whatever unblocked decisions are useful next.",
+      "should_trigger": true,
+      "split": "validation"
+    },
+    {
+      "id": "p07",
+      "query": "새 결제 복구 경험을 기획하려는데 사용자 행동, 범위, 핵심 아키텍처를 먼저 같이 결정하자.",
+      "should_trigger": true,
+      "split": "validation"
+    },
+    {
+      "id": "p08",
+      "query": "Draft a decision-level proposal for introducing audit history. We may need a cheap prototype to decide the interaction model.",
+      "should_trigger": true,
+      "split": "validation"
+    },
+    {
+      "id": "p09",
+      "query": "Help me scope an RFC for splitting this monolith. There are dependent decisions and unknown third-party constraints.",
+      "should_trigger": true,
+      "split": "validation"
+    },
+    {
+      "id": "p10",
+      "query": "need help figruing out what to build for team workspaces; lots of fog, not ready for tech spec yet",
+      "should_trigger": true,
+      "split": "validation"
+    },
+    {
+      "id": "n01",
+      "query": "The approved Proposal is attached. Turn it into a technical spec covering APIs, errors, and test seams.",
+      "should_trigger": false,
+      "split": "train"
+    },
+    {
+      "id": "n02",
+      "query": "Break this approved spec into implementation tickets with blockers.",
+      "should_trigger": false,
+      "split": "train"
+    },
+    {
+      "id": "n03",
+      "query": "Fix the typo in the checkout button label and run the existing test.",
+      "should_trigger": false,
+      "split": "train"
+    },
+    {
+      "id": "n04",
+      "query": "Implement issue #92 exactly as specified.",
+      "should_trigger": false,
+      "split": "train"
+    },
+    {
+      "id": "n05",
+      "query": "Read the Stripe API docs and tell me the current refund limit.",
+      "should_trigger": false,
+      "split": "train"
+    },
+    {
+      "id": "n06",
+      "query": "Review this pull request for regressions.",
+      "should_trigger": false,
+      "split": "validation"
+    },
+    {
+      "id": "n07",
+      "query": "Rename this private helper and update its three callers; the route is already clear.",
+      "should_trigger": false,
+      "split": "validation"
+    },
+    {
+      "id": "n08",
+      "query": "Run the ready tasks in parallel and merge their branches.",
+      "should_trigger": false,
+      "split": "validation"
+    },
+    {
+      "id": "n09",
+      "query": "Summarize the existing architecture decision record without changing it.",
+      "should_trigger": false,
+      "split": "validation"
+    },
+    {
+      "id": "n10",
+      "query": "Make three visual variants of this already-specified settings page so I can compare styling.",
+      "should_trigger": false,
+      "split": "validation"
+    }
+  ]
+}

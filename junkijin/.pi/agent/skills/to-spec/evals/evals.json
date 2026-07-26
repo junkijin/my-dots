@@ -1,0 +1,43 @@
+{
+  "skill_name": "to-spec",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Proposal #73 is approved and fixes the user behavior, scope, and event-driven direction. The API shape, event schema, retry semantics, migration, and tests are not decided. Produce the Spec collaboratively.",
+      "expected_output": "The agent preserves Proposal decisions, inspects implementation context, orders remaining design decisions, and asks one recommended technical question at a time before drafting the complete Spec.",
+      "files": [],
+      "assertions": [
+        "The agent validates and treats the approved Proposal as fixed input.",
+        "The agent does not repeat questions about settled product direction.",
+        "The first interaction contains one unresolved Spec decision with a recommendation and trade-offs.",
+        "The decision queue covers relevant contracts, failures, compatibility, and tests without becoming a task plan.",
+        "No production code or implementation tickets are created."
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "While specifying an approved client-only encryption Proposal, repository inspection proves the server must index plaintext to satisfy an approved search requirement.",
+      "expected_output": "The agent surfaces the contradiction and returns to to-proposal rather than silently changing encryption or search behavior in the Spec.",
+      "files": [],
+      "assertions": [
+        "The contradiction is stated with repository evidence.",
+        "The agent does not override either approved Proposal decision.",
+        "The workflow stops at the Proposal boundary and asks one direction-level decision.",
+        "No Spec is published as approved while the contradiction remains."
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "All remaining Spec decisions have been confirmed. Prepare the final technical artifact for review.",
+      "expected_output": "The agent produces a compact technical Spec linked to its Proposal with behavioral contracts, design, interfaces and data, failures, rollout, quality constraints, risk-based test seams, latitude, scope, and traceability, then asks for one final approval.",
+      "files": [],
+      "assertions": [
+        "The Spec links rather than restates the whole Proposal.",
+        "Important behaviors and risks map to stable test seams and required evidence.",
+        "Stable interfaces or type shapes appear only where they improve precision; there is no file-by-file plan.",
+        "No blocking placeholder or unresolved design question remains.",
+        "Publication waits for explicit full-document approval and the workflow stops afterward."
+      ]
+    }
+  ]
+}
