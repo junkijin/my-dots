@@ -5,8 +5,10 @@ import { join } from "node:path";
 import {
 	formatSize,
 	truncateHead,
+	type AgentToolResult,
 	type ExtensionAPI,
 	type Theme,
+	type ToolRenderResultOptions,
 } from "@earendil-works/pi-coding-agent";
 import { Text } from "@earendil-works/pi-tui";
 import { Type } from "typebox";
@@ -313,8 +315,14 @@ function renderCall(name: ToolName, detail: string, theme: Theme): Text {
 	return new Text(theme.fg("toolTitle", `${theme.bold(name)}${suffix}`), 0, 0);
 }
 
-function renderResult(): Text {
-	return new Text("", 0, 0);
+function renderResult(
+	result: AgentToolResult<unknown>,
+	{ expanded }: ToolRenderResultOptions,
+): Text {
+	if (!expanded) return new Text("", 0, 0);
+
+	const content = result.content[0];
+	return new Text(content?.type === "text" ? content.text : "", 0, 0);
 }
 
 export default function webExtension(pi: ExtensionAPI) {
