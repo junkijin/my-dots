@@ -1,6 +1,6 @@
 # Evidence, prototypes, and prerequisites
 
-Load this reference only when a Proposal decision needs more than repository inspection and user judgment.
+Load this reference only when a Decision Map issue needs more than repository inspection and user judgment.
 
 ## Research
 
@@ -15,13 +15,13 @@ For secondary evidence, state why primary evidence was insufficient and label co
 
 Bound each investigation with:
 
-- one question;
-- the decision it informs;
+- one exact research question;
+- the downstream decision it informs;
 - eligible source types;
-- a concise output contract;
+- required findings, claim-level citations, confidence, contradictions, and remaining unknowns;
 - a stop condition.
 
-After one or two meaningful retrieval fallbacks, stop and identify the missing fact instead of searching indefinitely.
+After one or two meaningful retrieval fallbacks, stop and identify the missing fact instead of searching indefinitely. Research resolves facts but never substitutes for the user's direction-shaping judgment.
 
 ## Throwaway prototypes
 
@@ -39,6 +39,6 @@ A useful prototype may be a schema sketch, state transition table, mocked intera
 
 ## Prerequisites
 
-A prerequisite exists only to unblock research or a Proposal decision. Examples include requesting access, obtaining a representative export, or preparing a safe test account.
+A prerequisite exists only to unblock research or a direction-shaping decision. Examples include requesting access, obtaining a representative export, or preparing a safe test account.
 
-Perform safe local work autonomously after the Map is approved. Ask before external, destructive, costly, credential-changing, or scope-expanding actions. Record what was done and any durable pointers needed downstream. Never use a prerequisite issue to implement part of the destination.
+Perform safe local work autonomously after the Map exists. Ask before external, destructive, costly, credential-changing, or scope-expanding actions. Record what was done and any durable pointers needed downstream. Never use a prerequisite issue to implement part of the destination.

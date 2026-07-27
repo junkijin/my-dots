@@ -2,7 +2,8 @@
 kind: task
 id: T001
 status: draft
-spec: ../spec.md
+product_spec: ""
+implementation_plan: ""
 blocked_by: []
 claimed_by: ""
 ---
@@ -11,11 +12,11 @@ claimed_by: ""
 
 ## Context
 
-{{Link the approved Spec and only the decision or evidence records this task needs.}}
+{{Link the Product Spec, graph-level implementation plan, and only the decision or evidence records this task needs.}}
 
 ## Outcome
 
-{{State the independently verifiable green result this task delivers.}}
+{{State the independently verifiable green result this task delivers. For user-facing work, describe the narrow but complete end-to-end behavior of the tracer-bullet slice, not one technical layer of a feature.}}
 
 ## Scope
 
@@ -27,9 +28,9 @@ claimed_by: ""
 
 - {{Adjacent work owned elsewhere or deliberately excluded}}
 
-## Spec Decisions
+## Requirements and Design Decisions
 
-- {{Approved contract or constraint this task must preserve}}
+- {{Product requirement, technical contract, or constraint this task must preserve}}
 
 ## Dependencies
 

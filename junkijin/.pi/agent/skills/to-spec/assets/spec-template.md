@@ -1,55 +1,41 @@
 ---
-kind: spec
+kind: product-spec
 id: spec
-status: draft
-proposal: ""
-supersedes: ""
+decision_map: ""
 ---
 
-# {{Spec title}}
+# {{Product Spec title}}
 
-## Proposal
+## Problem Statement
 
-{{Link the approved Proposal and identify the direction this Spec preserves.}}
+{{Describe the problem from the user's perspective, including the relevant current experience.}}
 
-## Behavioral Contract
+## Solution
 
-{{Describe actors, inputs, outputs, state transitions, ordering, idempotency, and observable acceptance scenarios that matter.}}
+{{Describe the intended solution and outcome from the user's perspective.}}
 
-## System Design
+## User Stories
 
-{{Define responsibilities and interactions at stable module or service boundaries.}}
+1. As an {{actor}}, I want {{feature or behavior}}, so that {{benefit}}
 
-## Interfaces and Data
+{{Continue with a comprehensive, numbered, non-duplicative list covering all discussed aspects of the feature.}}
 
-{{Define relevant APIs, events, schemas, type shapes, ownership, invariants, and migrations. State explicitly when no interface or data change is required.}}
+## Implementation Decisions
 
-## Failure and Edge Cases
+- {{Record only implementation decisions already settled in the conversation, approved direction records, or explicit project constraints. Do not make new technical design decisions.}}
 
-{{Define invalid inputs, partial failures, retries, concurrency, cancellation, recovery, and user-visible errors that apply.}}
+{{Do not include file paths or implementation procedures. Stable module, interface, schema, type, or state references are allowed only when an existing decision would otherwise be ambiguous. Inline a trimmed prototype-derived shape only when it encodes an already-settled decision more precisely than prose, and identify it as prototype evidence.}}
 
-## Compatibility and Rollout
+## Testing Decisions
 
-{{Define backward compatibility, rollout order, migration windows, rollback constraints, and deployment assumptions. State explicitly when none apply.}}
-
-## Quality Constraints
-
-{{Record relevant security, privacy, performance, observability, accessibility, or operational constraints. State explicitly when the Proposal adds none.}}
-
-## Test Strategy
-
-| Behavior or risk | Test seam | Required evidence |
-| --- | --- | --- |
-| {{Important behavior or failure risk}} | {{Browser, API, contract, integration, public module, event, or pure logic seam}} | {{What passing evidence must prove}} |
-
-## Implementation Latitude
-
-- {{Reversible implementation choice an executing agent may make without changing a contract}}
+- {{Describe what good external-behavior evidence must prove.}}
+- {{Record the user-confirmed high-level test seam or seams and relevant existing test prior art.}}
+- {{Name user-visible areas or capabilities that require coverage without prescribing an internal module-level test plan.}}
 
 ## Out of Scope
 
-- {{Technical or behavioral work excluded from this Spec}}
+- {{Describe work deliberately excluded from this Product Spec.}}
 
-## Traceability
+## Further Notes
 
-- {{Proposal decision or requirement}} → {{Spec section or contract that realizes it}}
+- {{Link relevant Decision Maps, evidence, terminology, constraints, risks, or other non-blocking context.}}
