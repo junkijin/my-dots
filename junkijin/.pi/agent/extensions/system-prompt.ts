@@ -16,7 +16,7 @@ function formatSkill(skill: Skill): string {
 	return `<skill path="${escapeXml(skill.filePath)}">
 <name>${escapeXml(skill.name.trim())}</name>
 <description>
-${skill.description}
+${skill.description.trim()}
 </description>
 </skill>`;
 }
