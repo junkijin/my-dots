@@ -322,7 +322,8 @@ function renderResult(
 	if (!expanded) return new Text("", 0, 0);
 
 	const content = result.content[0];
-	return new Text(content?.type === "text" ? content.text : "", 0, 0);
+	const body = content?.type === "text" ? content.text : "";
+	return new Text(body ? `\n${body}` : "", 0, 0);
 }
 
 export default function webExtension(pi: ExtensionAPI) {
