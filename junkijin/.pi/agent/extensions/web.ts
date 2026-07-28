@@ -25,7 +25,7 @@ const SEARCH_PARAMS = Type.Object({
 	search_queries: Type.Array(
 		Type.String({ minLength: 1, maxLength: 200 }),
 		{
-			description: "Keyword queries of 3-6 words, related to the objective. Provide at least one (2-3 recommended); batch multiple in one call for broad searches. Search operators are allowed.",
+			description: "Concise keyword search queries, 3-6 words each, which may include search operators. At least one query is required; provide 2-3 for best results. For broad tasks, you can include multiple related queries in a single call instead of chaining web_search calls. The queries should be related to the objective.",
 			minItems: 1,
 		},
 	),
@@ -33,7 +33,7 @@ const SEARCH_PARAMS = Type.Object({
 
 const FETCH_PARAMS = Type.Object({
 	url: Type.String({
-		description: "URL to extract content from. Must be a valid HTTP/HTTPS URL without embedded username or password.",
+		description: "List of URLs to extract content from. Must be valid HTTP/HTTPS URLs.",
 	}),
 	objective: Type.Optional(Type.String({
 		description: "Natural-language description of what information you're looking for from the URLs.",
@@ -384,6 +384,7 @@ export default function webExtension(pi: ExtensionAPI) {
 					{
 						urls: [url],
 						session_id: sessionId,
+						full_content: true,
 						...(objective ? { objective } : {}),
 					},
 					signal,

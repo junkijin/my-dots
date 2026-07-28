@@ -15,14 +15,14 @@ function escapeXml(value: string): string {
 function formatSkill(skill: Skill): string {
 	return `<skill path="${escapeXml(skill.filePath)}">
 <name>${escapeXml(skill.name.trim())}</name>
-<description>
-${skill.description.trim()}
-</description>
+<description>${skill.description.trim()}</description>
 </skill>`;
 }
 
 function buildSkillsPrompt(skills: Skill[]): string | undefined {
-	const promptTemplate = `The following skills contain task-specific instructions. When a skill's activation criteria are met, read its SKILL.md before proceeding. Resolve relative paths referenced by SKILL.md from the directory containing that file.
+	const promptTemplate = `## Skills
+
+The following skills contain task-specific instructions. When a skill's activation criteria are met, read its SKILL.md before proceeding. Resolve relative paths referenced by SKILL.md from the directory containing that file.
 
 <skills>
 {{SKILL_ELEMENTS}}
@@ -43,7 +43,9 @@ ${content.trim()}
 }
 
 function buildProjectContextPrompt(contextFiles: ProjectContextFile[]): string | undefined {
-	const promptTemplate = `The following project contexts contain project-specific instructions relevant to the current work.
+	const promptTemplate = `## Project Contexts
+
+The following project contexts contain project-specific instructions relevant to the current work.
 
 <project_contexts>
 {{PROJECT_INSTRUCTIONS}}
@@ -65,7 +67,9 @@ function formatDate(date: Date): string {
 }
 
 function buildRuntimeContextPrompt(cwd: string): string {
-	const promptTemplate = `Current date: {{DATE}}
+	const promptTemplate = `## Session Context
+
+Current date: {{DATE}}
 Current working directory: {{CWD}}`;
 
 	return promptTemplate
