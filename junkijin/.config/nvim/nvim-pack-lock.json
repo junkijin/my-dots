@@ -10,7 +10,7 @@
       "src": "https://github.com/stevearc/conform.nvim"
     },
     "fzf-lua": {
-      "rev": "267f5db2aa2202b9f6cc7a50783f0ccd2121766c",
+      "rev": "28440c741e927592877514fba3db21eb188caec8",
       "src": "https://github.com/ibhagwan/fzf-lua"
     },
     "gruvbox-material": {
@@ -21,12 +21,8 @@
       "rev": "84a4987ff36798c2fc1169cbaff67960aed9776f",
       "src": "https://github.com/NMAC427/guess-indent.nvim"
     },
-    "indentmini.nvim": {
-      "rev": "38572ce5a7a064a5deb89d6d861b7c40fc929ab1",
-      "src": "https://github.com/nvimdev/indentmini.nvim"
-    },
     "leap.nvim": {
-      "rev": "d7f8ee64155b7790188f17a993390f32577cfb81",
+      "rev": "52bc56ba61b1f54f123e29d6df7d1b7a0393eeac",
       "src": "https://codeberg.org/andyg/leap.nvim"
     },
     "lualine.nvim": {
@@ -42,28 +38,15 @@
       "src": "https://github.com/kevinhwang91/nvim-bqf"
     },
     "nvim-lspconfig": {
-      "rev": "fef8b117ad5fb73943913f444f22065c4b834a60",
+      "rev": "1c0d8f70dbc8827263eedc3cf7021ceba0f68689",
       "src": "https://github.com/neovim/nvim-lspconfig"
     },
     "nvim-surround": {
       "rev": "8b47db616ef658b8fc27e61db2896aa2f40134de",
       "src": "https://github.com/kylechui/nvim-surround"
     },
-    "nvim-treesitter": {
-      "rev": "4916d6592ede8c07973490d9322f187e07dfefac",
-      "src": "https://github.com/nvim-treesitter/nvim-treesitter",
-      "version": "'main'"
-    },
-    "nvim-treesitter-endwise": {
-      "rev": "8fe8a95630f4f2c72a87ba1927af649e0bfaa244",
-      "src": "https://github.com/RRethy/nvim-treesitter-endwise"
-    },
-    "nvim-ts-autotag": {
-      "rev": "88c1453db4ba7dd24131086fe51fdf74e587d275",
-      "src": "https://github.com/windwp/nvim-ts-autotag"
-    },
     "nvim-web-devicons": {
-      "rev": "dfbfaa967a6f7ec50789bead7ef87e336c1fa63c",
+      "rev": "2ae6958df7ced50baac5035cec0c15799eedfbf7",
       "src": "https://github.com/nvim-tree/nvim-web-devicons"
     },
     "oil.nvim": {
@@ -75,7 +58,7 @@
       "src": "https://github.com/folke/persistence.nvim"
     },
     "smart-splits.nvim": {
-      "rev": "d4bda1c9b8d07d9fc642e8f985b3560df8991901",
+      "rev": "89ab35b282783efc1c49deadd72c22afd5eac356",
       "src": "https://github.com/mrjones2014/smart-splits.nvim"
     },
     "targets.vim": {
@@ -94,16 +77,12 @@
       "rev": "3b753cf8c6a4dcde6edee8827d464ba9b8c4a6f0",
       "src": "https://github.com/tpope/vim-fugitive"
     },
-    "vim-indent-guides": {
-      "rev": "a1e1390c0136e63e813d051de2003bf0ee18ae30",
-      "src": "https://github.com/nathanaelkane/vim-indent-guides"
-    },
     "vim-repeat": {
       "rev": "65846025c15494983dafe5e3b46c8f88ab2e9635",
       "src": "https://github.com/tpope/vim-repeat"
     },
     "zig.vim": {
-      "rev": "29f7a9b8a4e33f936b803de0b713683ad687a6c3",
+      "rev": "61109e5166f2bdb7578493a0220a92c43627fc82",
       "src": "https://codeberg.org/ziglang/zig.vim.git"
     }
   }

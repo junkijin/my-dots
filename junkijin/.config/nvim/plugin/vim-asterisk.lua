@@ -1,6 +1,4 @@
-vim.pack.add({
-	"https://github.com/haya14busa/vim-asterisk",
-}, {
-	load = true,
-	confirm = false,
-})
+vim.keymap.set("n", "*", "<Plug>(asterisk-z*)")
+vim.keymap.set("n", "#", "<Plug>(asterisk-z#)")
+vim.keymap.set("n", "g*", "<Plug>(asterisk-gz*)")
+vim.keymap.set("n", "g#", "<Plug>(asterisk-gz#)")

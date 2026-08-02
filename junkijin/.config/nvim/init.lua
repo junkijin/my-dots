@@ -1,61 +1,12 @@
 vim.loader.enable()
 
--- Bootstrap
+-- Must precede every `<leader>` mapping, including the ones plugins define.
 vim.g.mapleader = " "
 
--- Options
-vim.opt.termguicolors = true
-vim.opt.updatetime = 256
-vim.opt.visualbell = true
-vim.opt.scrolloff = 3
-vim.opt.colorcolumn = "+0"
-vim.opt.clipboard = "unnamedplus"
-vim.opt.tabstop = 4
-vim.opt.shiftwidth = 4
-vim.opt.ignorecase = true
-vim.opt.smartcase = true
-vim.opt.swapfile = false
-vim.opt.writebackup = false
-vim.opt.number = true
-vim.opt.signcolumn = "number"
-vim.opt.background = "dark"
-vim.opt.showtabline = 0
-vim.opt.laststatus = 3
-vim.opt.grepprg = "rg --vimgrep"
-vim.opt.grepformat = "%f:%l:%c:%m"
-vim.opt.pumheight = 10
-vim.opt.pumwidth = 32
-vim.opt.splitright = true
-vim.opt.title = true
-vim.opt.titlestring = '%t%( %M%)%( (%{expand("%:~:.:h")})%)'
+require("config.options")
+require("config.keymaps")
+require("config.pack")
 
--- LSP
-vim.diagnostic.config({
-	signs = false,
-})
-
-vim.lsp.enable({
-	"elixirls",
-	"eslint",
-	"tailwindcss",
-	"vtsls",
-	"zls",
-})
-
--- Commands
-vim.cmd("cnoreabbrev W w")
-vim.cmd("cnoreabbrev Q q")
-vim.cmd("cnoreabbrev Wq wq")
-vim.cmd("cnoreabbrev wQ wq")
-vim.cmd("cnoreabbrev WQ wq")
-vim.cmd("cnoreabbrev Wa wa")
-vim.cmd("cnoreabbrev wA wa")
-vim.cmd("cnoreabbrev WA wa")
-vim.cmd("cnoreabbrev Qa qa")
-vim.cmd("cnoreabbrev qA qa")
-vim.cmd("cnoreabbrev QA qa")
-
--- Navigation
-vim.keymap.set("n", "]t", "<Cmd>tabn<CR>")
-vim.keymap.set("n", "[t", "<Cmd>tabp<CR>")
-vim.keymap.set("n", "<ESC>", "<Cmd>noh<CR>")
+-- Plugins are on 'runtimepath' from here on, so `plugin/*.lua` (sourced right
+-- after this file) can configure them directly.
+vim.cmd.colorscheme("junki")
