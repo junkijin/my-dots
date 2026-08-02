@@ -16,6 +16,7 @@ vim.pack.add({
 	"https://github.com/kevinhwang91/nvim-bqf", -- + highlight: colors/junki.lua
 	"https://github.com/neovim/nvim-lspconfig",
 	"https://github.com/kylechui/nvim-surround",
+	"https://github.com/nvim-treesitter/nvim-treesitter",
 	"https://github.com/nvim-tree/nvim-web-devicons",
 	"https://github.com/stevearc/oil.nvim",
 	"https://github.com/folke/persistence.nvim",
