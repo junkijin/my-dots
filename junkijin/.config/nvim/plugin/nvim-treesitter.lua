@@ -4,15 +4,11 @@
 -- (:h treesitter-highlight).
 local parsers = {
 	"bash",
-	"c",
 	"css",
 	"diff",
-	"eex",
-	"elixir",
 	"git_config",
 	"git_rebase",
 	"gitcommit",
-	"heex",
 	"html",
 	"javascript",
 	"jsdoc",
@@ -21,7 +17,6 @@ local parsers = {
 	"luadoc",
 	"markdown",
 	"markdown_inline",
-	"query",
 	"regex",
 	"toml",
 	"tsx",
@@ -29,7 +24,6 @@ local parsers = {
 	"vim",
 	"vimdoc",
 	"yaml",
-	"zig",
 }
 
 -- A no-op once the parsers are on disk; the first start installs them
