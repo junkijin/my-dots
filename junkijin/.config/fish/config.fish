@@ -27,3 +27,8 @@ if status is-interactive
         end
     end
 end
+
+# Added by LM Studio CLI (lms)
+set -gx PATH $PATH /Users/ab180/.lmstudio/bin
+# End of LM Studio CLI section
+
