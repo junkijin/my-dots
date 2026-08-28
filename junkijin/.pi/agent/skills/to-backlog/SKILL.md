@@ -12,7 +12,7 @@ Map an approved story set onto work items — each an independently shippable in
 
 ## Position
 
-Last phase of `intent → to-decisions → to-spec → to-backlog`. Input: the spec approved at the to-spec review gate — story items (user stories with verification scenarios) on the initiative's Container. Requirement decisions belong to to-decisions; this phase reorganizes the spec, never extends it.
+Last phase of `intent → to-decisions → to-spec → to-backlog`. Input: the spec from to-spec — story items (user stories with verification scenarios) on the initiative's Container — approved by the user in their own review after to-spec. Requirement decisions belong to to-decisions; this phase reorganizes the spec, never extends it.
 
 ## Tracker
 
