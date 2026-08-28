@@ -1,0 +1,22 @@
+command = /opt/homebrew/bin/fish
+
+font-family = JetBrainsMono Nerd Font
+font-family = Apple SD Gothic Neo
+font-feature = +zero, +ss01, +ss19
+font-thicken = true
+font-thicken-strength = 128
+font-size = 14
+
+adjust-cell-height = 14%
+adjust-cell-width = -4%
+adjust-font-baseline = -4%
+
+theme = Gruvbox Dark
+
+window-colorspace = display-p3
+window-padding-balance = true
+
+cursor-style = block
+shell-integration-features = no-cursor
+
+link-url = false
