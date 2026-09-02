@@ -3,7 +3,6 @@
 if status is-interactive
     set -gx VISUAL nvim
     set -gx SHELL (command -s fish)
-    abbr --add cx codex
     abbr --add th treehouse
 
     # Treehouse marks its subshell with TREEHOUSE_DIR. Mirror that state into
