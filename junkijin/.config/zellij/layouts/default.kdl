@@ -7,9 +7,6 @@ layout {
                 format_right "{tabs}#[bg=#1d2021] "
                 format_space "#[bg=#1d2021]"
 
-                border_enabled "false"
-                hide_frame_for_single_pane "true"
-
                 mode_normal        "#[fg=green,bg=#1d2021]  {name}"
                 mode_locked        "#[fg=blue,bg=#1d2021]  {name}"
                 mode_resize        "#[fg=blue,bg=#1d2021]  {name}"

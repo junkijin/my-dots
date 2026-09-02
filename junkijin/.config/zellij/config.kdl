@@ -1,11 +1,11 @@
 default_shell "/opt/homebrew/bin/fish"
 show_startup_tips false
 scroll_buffer_size 100000
-scroll_mode_sync false
 
-simplified_ui true
 theme_dark "gruvbox-dark"
 theme_light "gruvbox-light"
+simplified_ui true
+pane_frames false
 
 keybinds clear-defaults=true {
     normal {
