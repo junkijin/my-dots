@@ -1,5 +1,4 @@
 if status is-interactive
-    and set --query GHOSTTY_RESOURCES_DIR
     and set --query TREEHOUSE_DIR
     and status test-feature mark-prompt
 
