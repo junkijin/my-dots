@@ -2,8 +2,8 @@ default_shell "/opt/homebrew/bin/fish"
 show_startup_tips false
 scroll_buffer_size 100000
 
-theme_dark "gruvbox-dark"
-theme_light "gruvbox-light"
+theme_dark "gruvbox-dark-dim"
+theme_light "gruvbox-light-dim"
 simplified_ui true
 pane_frames false
 
