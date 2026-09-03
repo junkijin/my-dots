@@ -1,8 +1,8 @@
 #!/bin/sh
 
 if /opt/homebrew/bin/zellij list-sessions --short 2>/dev/null \
-    | /usr/bin/grep -Fxq main \
-  && /opt/homebrew/bin/zellij --session main action list-clients 2>/dev/null \
+    | /usr/bin/grep -Fxq Main \
+  && /opt/homebrew/bin/zellij --session Main action list-clients 2>/dev/null \
     | /usr/bin/sed '1d' \
     | /usr/bin/grep -q .
 then
@@ -10,5 +10,5 @@ then
 else
   exec /opt/homebrew/bin/zellij options \
     --attach-to-session true \
-    --session-name main
+    --session-name Main
 fi
