@@ -107,3 +107,5 @@ keybinds clear-defaults=true {
 plugins {
     session-manager location="zellij:session-manager"
 }
+
+load_plugins {}
