@@ -19,6 +19,7 @@ window-padding-balance = true
 cursor-style = block
 shell-integration-features = no-cursor
 
+macos-option-as-alt = true
 link-url = false
 
 keybind = clear
