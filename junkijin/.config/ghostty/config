@@ -1,4 +1,4 @@
-command = /opt/homebrew/bin/fish
+command = /opt/homebrew/bin/fish -i -l
 
 font-family = JetBrainsMono Nerd Font
 font-family = Apple SD Gothic Neo
@@ -24,6 +24,7 @@ link-url = false
 
 keybind = clear
 
+keybind = cmd+n=new_window
 keybind = cmd+c=copy_to_clipboard
 keybind = cmd+v=paste_from_clipboard
 
