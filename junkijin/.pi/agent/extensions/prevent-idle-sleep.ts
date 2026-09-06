@@ -12,6 +12,7 @@ using System;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
+using Microsoft.Win32.SafeHandles;
 
 public static class PiSleepInhibitor
 {
@@ -23,50 +24,29 @@ public static class PiSleepInhibitor
     {
         public uint Version;
         public uint Flags;
-        public IntPtr Reason;
+        [MarshalAs(UnmanagedType.LPWStr)]
+        public string Reason;
     }
 
     [DllImport("kernel32.dll", SetLastError = true)]
-    private static extern IntPtr PowerCreateRequest(ref ReasonContext context);
+    private static extern SafeFileHandle PowerCreateRequest(ref ReasonContext context);
     [DllImport("kernel32.dll", SetLastError = true)]
-    private static extern bool PowerSetRequest(IntPtr handle, int type);
-    [DllImport("kernel32.dll")]
-    private static extern bool PowerClearRequest(IntPtr handle, int type);
-    [DllImport("kernel32.dll")]
-    private static extern bool CloseHandle(IntPtr handle);
+    private static extern bool PowerSetRequest(SafeFileHandle handle, int type);
 
     public static void Hold(int parentPid)
     {
-        var reason = Marshal.StringToHGlobalUni("${REASON}");
-        IntPtr handle;
-        try
+        var context = new ReasonContext { Flags = SimpleReasonString, Reason = "${REASON}" };
+        // Closing the handle also releases its active power requests.
+        using (var handle = PowerCreateRequest(ref context))
         {
-            var context = new ReasonContext { Flags = SimpleReasonString, Reason = reason };
-            handle = PowerCreateRequest(ref context);
-        }
-        finally { Marshal.FreeHGlobal(reason); }
+            if (handle.IsInvalid || !PowerSetRequest(handle, SystemRequired))
+                throw new Win32Exception(Marshal.GetLastWin32Error());
 
-        if (handle == IntPtr.Zero || handle == new IntPtr(-1))
-            throw new Win32Exception(Marshal.GetLastWin32Error());
-        if (!PowerSetRequest(handle, SystemRequired))
-        {
-            var error = new Win32Exception(Marshal.GetLastWin32Error());
-            CloseHandle(handle);
-            throw error;
-        }
-
-        try
-        {
             try
             {
                 using (var parent = Process.GetProcessById(parentPid)) parent.WaitForExit();
             }
             catch (ArgumentException) { }
-        }
-        finally
-        {
-            PowerClearRequest(handle, SystemRequired);
-            CloseHandle(handle);
         }
     }
 }
@@ -79,14 +59,12 @@ systemd-inhibit --what=idle --mode=block --who=pi --why='${REASON}' -- /bin/sh -
 gnome-session-inhibit --inhibit idle --reason '${REASON}' /bin/sh -c '${WATCH_PARENT}' pi-sleep-inhibitor ${PID}
 `;
 
-const HELPER: [string, string[]] | undefined =
-	process.platform === "darwin"
-		? ["/usr/bin/caffeinate", ["-i", "-w", PID]]
-		: process.platform === "linux"
-			? ["/bin/sh", ["-c", LINUX_SCRIPT]]
-			: process.platform === "win32"
-				? ["powershell.exe", ["-NoProfile", "-NonInteractive", "-Command", WINDOWS_SCRIPT]]
-				: undefined;
+const HELPERS: Partial<Record<NodeJS.Platform, [string, string[]]>> = {
+	darwin: ["/usr/bin/caffeinate", ["-i", "-w", PID]],
+	linux: ["/bin/sh", ["-c", LINUX_SCRIPT]],
+	win32: ["powershell.exe", ["-NoProfile", "-NonInteractive", "-Command", WINDOWS_SCRIPT]],
+};
+const HELPER = HELPERS[process.platform];
 
 export default function (pi: ExtensionAPI) {
 	let child: ChildProcess | undefined;

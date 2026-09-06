@@ -20,20 +20,19 @@ function formatSkill(skill: Skill): string {
 }
 
 function buildSkillsPrompt(skills: Skill[]): string | undefined {
-	const promptTemplate = `## Skills
-
-The following skills contain task-specific instructions. When a skill's activation criteria are met, read its SKILL.md before proceeding. Resolve relative paths referenced by SKILL.md from the directory containing that file.
-
-<skills>
-{{SKILL_ELEMENTS}}
-</skills>`;
 	const skillElements = skills
 		.filter((skill) => !skill.disableModelInvocation)
 		.map(formatSkill)
 		.join("\n");
 
 	if (!skillElements) return undefined;
-	return promptTemplate.replace("{{SKILL_ELEMENTS}}", () => skillElements);
+	return `## Skills
+
+The following skills contain task-specific instructions. When a skill's activation criteria are met, read its SKILL.md before proceeding. Resolve relative paths referenced by SKILL.md from the directory containing that file.
+
+<skills>
+${skillElements}
+</skills>`;
 }
 
 function formatProjectContext({ path, content }: ProjectContextFile): string {
@@ -43,20 +42,19 @@ ${content.trim()}
 }
 
 function buildProjectContextPrompt(contextFiles: ProjectContextFile[]): string | undefined {
-	const promptTemplate = `## Project Contexts
-
-The following project contexts contain project-specific instructions relevant to the current work.
-
-<project_contexts>
-{{PROJECT_INSTRUCTIONS}}
-</project_contexts>`;
 	const projectInstructions = contextFiles
 		.filter(({ content }) => content.trim())
 		.map(formatProjectContext)
 		.join("\n");
 
 	if (!projectInstructions) return undefined;
-	return promptTemplate.replace("{{PROJECT_INSTRUCTIONS}}", () => projectInstructions);
+	return `## Project Contexts
+
+The following project contexts contain project-specific instructions relevant to the current work.
+
+<project_contexts>
+${projectInstructions}
+</project_contexts>`;
 }
 
 function formatDate(date: Date): string {
@@ -67,14 +65,10 @@ function formatDate(date: Date): string {
 }
 
 function buildRuntimeContextPrompt(cwd: string): string {
-	const promptTemplate = `## Session Context
+	return `## Session Context
 
-Current date: {{DATE}}
-Current working directory: {{CWD}}`;
-
-	return promptTemplate
-		.replace("{{DATE}}", () => formatDate(new Date()))
-		.replace("{{CWD}}", () => cwd.replace(/\\/g, "/"));
+Current date: ${formatDate(new Date())}
+Current working directory: ${cwd.replace(/\\/g, "/")}`;
 }
 
 function joinPromptSections(sections: Array<string | undefined>): string {

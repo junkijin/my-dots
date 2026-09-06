@@ -20,21 +20,12 @@ function lookupBase(path: string): string | undefined {
 	}
 }
 
-function findGitRepoRoot(cwd: string): string | undefined {
-	let directory = lookupBase(cwd);
-	while (directory) {
-		if (existsSync(join(directory, ".git"))) return directory;
-		const parent = dirname(directory);
-		if (parent === directory) return undefined;
-		directory = parent;
-	}
-	return undefined;
-}
-
-function findProjectConfigRoot(cwd: string): string | undefined {
+function findProjectRoot(cwd: string): string | undefined {
 	let directory = lookupBase(cwd);
 	let root: string | undefined;
 	while (directory) {
+		// Prefer the nearest Git root; otherwise use the outermost project config root.
+		if (existsSync(join(directory, ".git"))) return directory;
 		const dotPi = join(directory, CONFIG_DIR_NAME);
 		try {
 			if (resolve(dotPi) !== piHome && statSync(dotPi).isDirectory()) root = directory;
@@ -49,7 +40,7 @@ function findProjectConfigRoot(cwd: string): string | undefined {
 }
 
 function getProjectName(cwd: string): string {
-	const root = findGitRepoRoot(cwd) ?? findProjectConfigRoot(cwd);
+	const root = findProjectRoot(cwd);
 	if (root) return basename(root) || root;
 
 	const home = homedir();
@@ -67,8 +58,9 @@ export default function (pi: ExtensionAPI) {
 	let requestRender = () => {};
 
 	pi.on("session_start", (_event, ctx) => {
-		const projectName = getProjectName(ctx.cwd);
+		const projectName = clean(getProjectName(ctx.cwd));
 		ctx.ui.setFooter((tui, theme, footerData) => {
+			const dim = (text: string) => theme.fg("dim", text);
 			requestRender = () => tui.requestRender();
 			return {
 				invalidate() {},
@@ -78,15 +70,15 @@ export default function (pi: ExtensionAPI) {
 					const context = usage?.percent == null
 						? ""
 						: `${usage.percent.toFixed(1)}% (${contextFormatter.format(usage.contextWindow)}) • `;
-					const dim = (text: string) => theme.fg("dim", text);
-					const main = align(clean(projectName), `${context}${clean(model)} (${clean(pi.getThinkingLevel())})`, width, dim);
+					const main = align(projectName, `${context}${clean(model)} (${pi.getThinkingLevel()})`, width, dim);
 					const statuses = [...footerData.getExtensionStatuses()]
 						.sort(([a], [b]) => a.localeCompare(b))
 						.map(([, text]) => clean(text))
 						.filter(Boolean)
 						.join(" · ");
 
-					return [main, ...(statuses ? [truncateToWidth(dim(statuses), width, dim("..."))] : [])];
+					if (!statuses) return [main];
+					return [main, truncateToWidth(dim(statuses), width, dim("..."))];
 				},
 			};
 		});

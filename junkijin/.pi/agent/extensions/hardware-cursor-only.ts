@@ -7,30 +7,23 @@ const base = Object.getPrototypeOf(TuiAltScreen.prototype) as {
 };
 
 export default function (pi: ExtensionAPI) {
-	if (!Object.hasOwn(base, "extractCursorPosition")) return; // pi 내부 구조 변경 시 아무것도 하지 않음
-
-	let original: typeof base.extractCursorPosition | undefined;
+	const original = base.extractCursorPosition;
 
 	pi.on("session_start", () => {
-		if (original) return; // 중복 패치 방지
-		const prev = (original = base.extractCursorPosition);
 		base.extractCursorPosition = function (lines, height) {
 			if (this.getShowHardwareCursor()) {
 				const top = Math.max(0, lines.length - height);
-				const index = lines.findLastIndex((line, index) => index >= top && !!line?.includes(CURSOR_MARKER));
+				const index = lines.findLastIndex((line, index) => index >= top && line.includes(CURSOR_MARKER));
 				if (index >= 0) {
 					lines[index] = lines[index].replace(`${CURSOR_MARKER}\x1b[7m`, CURSOR_MARKER);
 				}
 			}
-			return prev.call(this, lines, height);
+			return original.call(this, lines, height);
 		};
 	});
 
-	// /reload, 세션 교체(new/resume/fork), 종료 시 원본 복원.
-	// reload 순서가 shutdown(구 runner) → factory 재실행 → session_start(신 runner)이므로 패치가 겹겹이 쌓이지 않는다.
+	// reload와 세션 교체는 shutdown → factory → session_start 순서로 진행된다.
 	pi.on("session_shutdown", () => {
-		if (!original) return;
 		base.extractCursorPosition = original;
-		original = undefined;
 	});
 }
