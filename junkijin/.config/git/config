@@ -63,9 +63,3 @@
 	ff = only
 [commit]
 	verbose = true
-	gpgsign = true
-[gpg]
-	format = ssh
-[user]
-	email = jin@junki.dev
-	name = Junki Jin
