@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 import { mkdtemp, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { format } from "node:url";
 import {
 	formatSize,
 	truncateHead,
@@ -108,22 +109,13 @@ function inlineTag(name: string, content: string): string {
 	return `<${name}>${content}</${name}>`;
 }
 
-function parseUrl(value: string): URL | undefined {
-	try {
-		return new URL(value);
-	} catch {
-		return undefined;
-	}
-}
-
 function normalizeUrl(value?: string): string {
 	if (!value) return "";
 
-	const url = parseUrl(value);
+	const url = URL.parse(value);
 	if (!url) return normalizeOneLine(value);
 
-	url.hash = "";
-	return url.toString().replace(/\/$/, "");
+	return format(url, { fragment: false }).replace(/\/$/, "");
 }
 
 function formatWarning(warning: WebWarning): string {
@@ -364,7 +356,7 @@ export default function webExtension(pi: ExtensionAPI) {
 		),
 		renderResult,
 		async execute(_id, { url, objective }, signal, _update, ctx) {
-			const parsedUrl = parseUrl(url);
+			const parsedUrl = URL.parse(url);
 			let response: WebResponse;
 
 			if (!parsedUrl || !["http:", "https:"].includes(parsedUrl.protocol)) {

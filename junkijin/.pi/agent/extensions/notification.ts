@@ -52,15 +52,11 @@ export default function (pi: ExtensionAPI) {
 
 	pi.on("agent_end", ({ messages }) => {
 		description = undefined;
-		for (let index = messages.length - 1; index >= 0; index--) {
-			const message = messages[index];
-			if (message.role !== "assistant") continue;
-			if (message.stopReason === "aborted") return;
+		const message = messages.findLast((message) => message.role === "assistant");
+		if (!message || message.stopReason === "aborted") return;
 
-			const chars = [...message.content.map((part) => (part.type === "text" ? part.text : "")).join("")];
-			description = chars.slice(0, 30).join("") + (chars.length > 30 ? "..." : "");
-			return;
-		}
+		const chars = [...message.content.map((part) => (part.type === "text" ? part.text : "")).join("")];
+		description = chars.slice(0, 30).join("") + (chars.length > 30 ? "..." : "");
 	});
 
 	pi.on("agent_settled", () => {

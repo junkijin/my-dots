@@ -7,6 +7,11 @@ import { basename, dirname, join, resolve, sep } from "node:path";
 const clean = (text: string) => text.replace(/\s+/g, " ").trim();
 const piHome = resolve(homedir(), CONFIG_DIR_NAME);
 
+const contextFormatter = new Intl.NumberFormat("en-US", {
+	notation: "compact",
+	maximumFractionDigits: 1,
+});
+
 function lookupBase(path: string): string | undefined {
 	try {
 		return statSync(path).isDirectory() ? path : dirname(path);
@@ -69,8 +74,10 @@ export default function (pi: ExtensionAPI) {
 				invalidate() {},
 				render(width) {
 					const model = ctx.model ? `${ctx.model.provider}/${ctx.model.id}` : "model not selected";
-					const contextTokens = ctx.getContextUsage()?.tokens;
-					const context = contextTokens == null ? "" : `${(contextTokens / 1000).toFixed(1)}K • `;
+					const usage = ctx.getContextUsage();
+					const context = usage?.percent == null
+						? ""
+						: `${usage.percent.toFixed(1)}% (${contextFormatter.format(usage.contextWindow)}) • `;
 					const dim = (text: string) => theme.fg("dim", text);
 					const main = align(clean(projectName), `${context}${clean(model)} (${clean(pi.getThinkingLevel())})`, width, dim);
 					const statuses = [...footerData.getExtensionStatuses()]

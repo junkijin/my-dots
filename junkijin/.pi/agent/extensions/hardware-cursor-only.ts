@@ -16,11 +16,10 @@ export default function (pi: ExtensionAPI) {
 		const prev = (original = base.extractCursorPosition);
 		base.extractCursorPosition = function (lines, height) {
 			if (this.getShowHardwareCursor()) {
-				for (let i = lines.length - 1, top = Math.max(0, lines.length - height); i >= top; i--) {
-					const line = lines[i];
-					if (!line?.includes(CURSOR_MARKER)) continue;
-					lines[i] = line.replace(`${CURSOR_MARKER}\x1b[7m`, CURSOR_MARKER);
-					break;
+				const top = Math.max(0, lines.length - height);
+				const index = lines.findLastIndex((line, index) => index >= top && !!line?.includes(CURSOR_MARKER));
+				if (index >= 0) {
+					lines[index] = lines[index].replace(`${CURSOR_MARKER}\x1b[7m`, CURSOR_MARKER);
 				}
 			}
 			return prev.call(this, lines, height);
