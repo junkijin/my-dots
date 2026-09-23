@@ -1,7 +1,6 @@
-import type { BuildSystemPromptOptions, ExtensionAPI } from "@earendil-works/pi-coding-agent";
-
-type Skill = NonNullable<BuildSystemPromptOptions["skills"]>[number];
-type ProjectContextFile = NonNullable<BuildSystemPromptOptions["contextFiles"]>[number];
+import { spawnSync } from "node:child_process";
+import * as os from "node:os";
+import { type ExtensionAPI, getShellConfig } from "@earendil-works/pi-coding-agent";
 
 function escapeXml(value: string): string {
 	return value
@@ -12,84 +11,71 @@ function escapeXml(value: string): string {
 		.replace(/'/g, "&apos;");
 }
 
-function formatSkill(skill: Skill): string {
-	return `<skill path="${escapeXml(skill.filePath)}">
-<name>${escapeXml(skill.name.trim())}</name>
-<description>${skill.description.trim()}</description>
-</skill>`;
+function element(tag: string, content: string, path?: string): string {
+	const attribute = path === undefined ? "" : ` path="${escapeXml(path)}"`;
+	return `<${tag}${attribute}>
+${content}
+</${tag}>`;
 }
 
-function buildSkillsPrompt(skills: Skill[]): string | undefined {
-	const skillElements = skills
-		.filter((skill) => !skill.disableModelInvocation)
-		.map(formatSkill)
-		.join("\n");
+function listSection(tag: string, intro: string, items: string[]): string | undefined {
+	if (items.length === 0) return undefined;
+	return element(
+		tag,
+		`${intro}
 
-	if (!skillElements) return undefined;
-	return `## Skills
-
-The following skills contain task-specific instructions. When a skill's activation criteria are met, read its SKILL.md before proceeding. Resolve relative paths referenced by SKILL.md from the directory containing that file.
-
-<skills>
-${skillElements}
-</skills>`;
+${items.join("\n")}`,
+	);
 }
 
-function formatProjectContext({ path, content }: ProjectContextFile): string {
-	return `<project_context path="${escapeXml(path)}">
-${content.trim()}
-</project_context>`;
+function describeShell(): string {
+	const { shell } = getShellConfig();
+	const version = spawnSync(shell, ["--version"], { encoding: "utf8" }).stdout?.split("\n")[0];
+	return version ? `${shell} (${version})` : shell;
 }
 
-function buildProjectContextPrompt(contextFiles: ProjectContextFile[]): string | undefined {
-	const projectInstructions = contextFiles
-		.filter(({ content }) => content.trim())
-		.map(formatProjectContext)
-		.join("\n");
+export default function systemPromptExtension(pi: ExtensionAPI) {
+	const operatingSystem = `${os.type()} ${os.release()} (${os.arch()})`;
+	const shell = describeShell();
 
-	if (!projectInstructions) return undefined;
-	return `## Project Contexts
-
-The following project contexts contain project-specific instructions relevant to the current work.
-
-<project_contexts>
-${projectInstructions}
-</project_contexts>`;
-}
-
-function formatDate(date: Date): string {
-	const year = date.getFullYear();
-	const month = String(date.getMonth() + 1).padStart(2, "0");
-	const day = String(date.getDate()).padStart(2, "0");
-	return `${year}-${month}-${day}`;
-}
-
-function buildRuntimeContextPrompt(cwd: string): string {
-	return `## Session Context
-
-Current date: ${formatDate(new Date())}
-Current working directory: ${cwd.replace(/\\/g, "/")}`;
-}
-
-function joinPromptSections(sections: Array<string | undefined>): string {
-	return sections
-		.map((section) => section?.trim())
-		.filter(Boolean)
-		.join("\n\n");
-}
-
-export default function systemPromptOverridesExtension(pi: ExtensionAPI) {
 	pi.on("before_agent_start", ({ systemPromptOptions }) => {
-		const { customPrompt, selectedTools, cwd, contextFiles = [], skills = [] } = systemPromptOptions;
-		const hasReadTool = !selectedTools || selectedTools.includes("read");
+		const { customPrompt, selectedTools, skills, contextFiles, cwd } = systemPromptOptions;
 
-		return {
-			systemPrompt: joinPromptSections([
-				customPrompt,
-				hasReadTool ? buildSkillsPrompt(skills) : undefined,
-				buildProjectContextPrompt(contextFiles),
-				buildRuntimeContextPrompt(cwd),
-			]),
-		};
+		const skillElements = selectedTools.includes("read")
+			? skills
+					.filter((skill) => !skill.disableModelInvocation)
+					.map((skill) =>
+						element(
+							"skill",
+							`<name>${escapeXml(skill.name.trim())}</name>
+<description>${skill.description.trim()}</description>`,
+							skill.filePath,
+						),
+					)
+			: [];
+		const contextElements = contextFiles
+			.filter(({ content }) => content.trim())
+			.map(({ path, content }) => element("project_context", content.trim(), path));
+
+		const blocks = [
+			customPrompt?.trim(),
+			listSection(
+				"skills",
+				"The following skills contain task-specific instructions. When a skill's activation criteria are met, read its SKILL.md before proceeding. Resolve relative paths referenced by SKILL.md from the directory containing that file.",
+				skillElements,
+			),
+			listSection(
+				"project_contexts",
+				"The following project contexts contain project-specific instructions relevant to the current work.",
+				contextElements,
+			),
+			element(
+				"session_context",
+				`Operating system: ${operatingSystem}
+Shell: ${shell}
+Current working directory: ${cwd.replace(/\\/g, "/")}`,
+			),
+		];
+		return { systemPrompt: blocks.filter(Boolean).join("\n\n") };
 	});
 }
