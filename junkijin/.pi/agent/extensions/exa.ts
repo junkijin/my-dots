@@ -2,10 +2,12 @@ import { mkdtemp, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
+	type AgentToolResult,
 	DEFAULT_MAX_BYTES,
 	DEFAULT_MAX_LINES,
 	type ExtensionAPI,
 	formatSize,
+	keyHint,
 	type Theme,
 	truncateHead,
 } from "@earendil-works/pi-coding-agent";
@@ -49,6 +51,31 @@ function callLine(name: string, value: string | undefined, theme: Theme, lastCom
 	return text;
 }
 
+// Same collapsed preview as the default tool result renderer.
+const PREVIEW_LINES = 10;
+
+// Built-in tools start the result with a newline, which leaves a blank line under the call line.
+function formatResult(result: AgentToolResult, expanded: boolean, theme: Theme, lastComponent: unknown) {
+	const text = (lastComponent as Text | undefined) ?? new Text("", 0, 0);
+	const output = result.content
+		.flatMap((part) => (part.type === "text" ? [part.text] : []))
+		.join("\n")
+		.trim();
+	if (!output) {
+		text.setText("");
+		return text;
+	}
+	const lines = output.split("\n");
+	const shown = expanded ? lines : lines.slice(0, PREVIEW_LINES);
+	const remaining = lines.length - shown.length;
+	let body = `\n${shown.map((line) => theme.fg("toolOutput", line)).join("\n")}`;
+	if (remaining > 0) {
+		body += `${theme.fg("muted", `\n... (${remaining} more lines,`)} ${keyHint("app.tools.expand", "to expand")}${theme.fg("muted", ")")}`;
+	}
+	text.setText(body);
+	return text;
+}
+
 export default function (pi: ExtensionAPI) {
 	pi.registerTool({
 		name: "web_search",
@@ -65,6 +92,7 @@ export default function (pi: ExtensionAPI) {
 			return { content: [{ type: "text", text: text.trim() ? await output(text) : `No results for "${params.query}"` }], details: {} };
 		},
 		renderCall: (args, theme, context) => callLine("web_search", args.query, theme, context.lastComponent),
+		renderResult: (result, { expanded }, theme, context) => formatResult(result, expanded, theme, context.lastComponent),
 	});
 
 	pi.registerTool({
@@ -80,5 +108,6 @@ export default function (pi: ExtensionAPI) {
 			return { content: [{ type: "text", text: text.trim() ? await output(text) : `No content for ${params.url}` }], details: {} };
 		},
 		renderCall: (args, theme, context) => callLine("web_fetch", args.url, theme, context.lastComponent),
+		renderResult: (result, { expanded }, theme, context) => formatResult(result, expanded, theme, context.lastComponent),
 	});
 }
