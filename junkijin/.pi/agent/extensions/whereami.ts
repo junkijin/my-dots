@@ -43,13 +43,13 @@ function collect(ctx: ExtensionContext): string {
 		const settings = SettingsManager.create(ctx.cwd, undefined, { projectTrusted: ctx.isProjectTrusted() });
 		return getShellConfig(settings.getShellPath()).shell;
 	});
-	const [source, user] = process.env.SHELL
-		? ["$SHELL", process.env.SHELL]
-		: ["login shell", attempt(() => os.userInfo().shell)];
+	// Qualify the login-shell fallback only. $SHELL is the usual source and needs no label.
+	const shellEnv = process.env.SHELL;
+	const user = shellEnv || attempt(() => os.userInfo().shell);
 	return [
 		`Operating system: ${name ? `${name} (${kernel}, ${os.arch()})` : `${kernel} (${os.arch()})`}`,
 		bash && `Bash tool shell: ${describeShell(bash)}`,
-		user && `User shell (${source}): ${describeShell(user)}`,
+		user && `User shell${shellEnv ? "" : " (login shell)"}: ${describeShell(user)}`,
 	]
 		.filter(Boolean)
 		.join("\n");
