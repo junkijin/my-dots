@@ -5,7 +5,8 @@ local function update_listchars()
 
 	vim.opt_local.list = true
 	vim.opt_local.listchars = {
-		tab = indent_char .. " ",
+		tab = "> ",
+		leadtab = indent_char .. " ",
 		leadmultispace = indent_char .. string.rep(" ", math.max(tabstop - 1, 0)),
 		trail = "·",
 		nbsp = "␣",
