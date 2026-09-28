@@ -9,4 +9,4 @@ require("config.pack")
 
 -- Plugins are on 'runtimepath' from here on, so `plugin/*.lua` (sourced right
 -- after this file) can configure them directly.
-vim.cmd.colorscheme("junki")
+vim.cmd.colorscheme("gruvbox-material-custom")

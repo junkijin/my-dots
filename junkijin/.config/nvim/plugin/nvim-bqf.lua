@@ -1,2 +1,2 @@
--- `BqfPreviewBorder` is overridden in colors/junki.lua.
+-- `BqfPreviewBorder` is overridden in colors/gruvbox-material-custom.lua.
 require("bqf").setup({})

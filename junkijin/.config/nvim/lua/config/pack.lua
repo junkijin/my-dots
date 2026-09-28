@@ -8,12 +8,12 @@ vim.pack.add({
 	{ src = "https://github.com/saghen/blink.cmp", version = vim.version.range("1.*") },
 	"https://github.com/stevearc/conform.nvim",
 	"https://github.com/ibhagwan/fzf-lua",
-	"https://github.com/sainnhe/gruvbox-material", -- config: colors/junki.lua
+	"https://github.com/sainnhe/gruvbox-material", -- config: colors/gruvbox-material-custom.lua
 	"https://github.com/NMAC427/guess-indent.nvim",
 	"https://codeberg.org/andyg/leap.nvim",
 	"https://github.com/nvim-lualine/lualine.nvim",
 	"https://github.com/windwp/nvim-autopairs",
-	"https://github.com/kevinhwang91/nvim-bqf", -- + highlight: colors/junki.lua
+	"https://github.com/kevinhwang91/nvim-bqf", -- + highlight: colors/gruvbox-material-custom.lua
 	"https://github.com/neovim/nvim-lspconfig",
 	"https://github.com/kylechui/nvim-surround",
 	"https://github.com/nvim-treesitter/nvim-treesitter",
