@@ -1,3 +1,7 @@
+vim.pack.add({
+	{ src = "https://github.com/saghen/blink.cmp", version = vim.version.range("1.*") },
+}, { confirm = false })
+
 vim.opt.completeopt:append("fuzzy")
 
 require("blink.cmp").setup({

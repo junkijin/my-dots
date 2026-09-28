@@ -1,3 +1,5 @@
+vim.pack.add({ "https://github.com/folke/persistence.nvim" }, { confirm = false })
+
 vim.opt.sessionoptions:remove("buffers")
 
 vim.keymap.set("n", "<leader>qs", "<cmd>lua require('persistence').load()<cr>")

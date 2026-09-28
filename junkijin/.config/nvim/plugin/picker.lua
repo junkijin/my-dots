@@ -1,3 +1,8 @@
+vim.pack.add({
+	"https://github.com/nvim-tree/nvim-web-devicons",
+	"https://github.com/ibhagwan/fzf-lua",
+}, { confirm = false })
+
 vim.keymap.set("n", "<leader>f", "<Cmd>FzfLua files<CR>")
 vim.keymap.set("n", "<leader>g", "<Cmd>FzfLua live_grep<CR>")
 

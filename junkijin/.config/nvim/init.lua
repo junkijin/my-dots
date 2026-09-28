@@ -3,10 +3,15 @@ vim.loader.enable()
 -- Must precede every `<leader>` mapping, including the ones plugins define.
 vim.g.mapleader = " "
 
-require("config.options")
-require("config.keymaps")
-require("config.pack")
+require("my.options")
+require("my.keymaps")
 
--- Plugins are on 'runtimepath' from here on, so `plugin/*.lua` (sourced right
--- after this file) can configure them directly.
-vim.cmd.colorscheme("gruvbox-material-custom")
+-- Each `plugin/*.lua` installs and configures the plugins it uses. Those
+-- scripts run after this file, where `vim.pack.add()` loads plugins on the spot
+-- (`load` defaults to `true` once init.lua is done, :h vim.pack.add()).
+--
+-- Keep every `src` identical to `nvim-pack-lock.json`: on mismatch `vim.pack`
+-- deletes the plugin and reinstalls it from the new source.
+--
+-- `PackChanged` hooks that must see `install` events go here: the first
+-- `vim.pack.add()` also installs whatever the lockfile lists (:h vim.pack-events).

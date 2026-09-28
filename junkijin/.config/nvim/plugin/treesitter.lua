@@ -1,3 +1,5 @@
+vim.pack.add({ "https://github.com/nvim-treesitter/nvim-treesitter" }, { confirm = false })
+
 -- The `main` branch (the repository default, requires Nvim 0.12; `master` is
 -- frozen for 0.11) ships parsers and queries only. Highlighting is a Neovim
 -- feature, indenting comes from the plugin, and neither turns itself on

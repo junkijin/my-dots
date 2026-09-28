@@ -1,3 +1,5 @@
+vim.pack.add({ "https://github.com/stevearc/conform.nvim" }, { confirm = false })
+
 local util = require("conform.util")
 
 local oxfmt_config_files = {

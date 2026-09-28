@@ -1,3 +1,7 @@
+vim.pack.add({ "https://github.com/nvim-lualine/lualine.nvim" }, { confirm = false })
+
+-- The `auto` theme resolves against `g:colors_name` at setup, which
+-- plugin/colorscheme.lua (sourced earlier, :h load-plugins) has already set.
 require("lualine").setup({
 	options = {
 		icons_enabled = false,

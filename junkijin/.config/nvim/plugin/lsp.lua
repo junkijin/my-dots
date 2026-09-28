@@ -1,3 +1,25 @@
+vim.pack.add({ "https://github.com/neovim/nvim-lspconfig" }, { confirm = false })
+
+vim.diagnostic.config({
+	signs = false,
+})
+
+-- Semantic tokens land at priority 125 against treesitter's 100, and the
+-- `@lsp.type.*` groups link to the treesitter ones by default, so the server's
+-- guess wins over the parse tree everywhere the two disagree. The switch is
+-- read when a client attaches (:h lsp-semantic_tokens), hence it covers servers
+-- started later and skips the requests altogether.
+vim.lsp.semantic_tokens.enable(false)
+
+-- Base configs come from nvim-lspconfig's `lsp/`; per-server overrides live in
+-- `after/lsp/` so they are merged last (:h lsp-config).
+vim.lsp.enable({
+	"eslint",
+	"oxlint",
+	"tailwindcss",
+	"vtsls",
+})
+
 local ignored_lsp_progress_clients = {
 	["null-ls"] = true,
 }
