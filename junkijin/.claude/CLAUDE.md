@@ -16,6 +16,12 @@ Whenever a question or decision affects the result of the work, stop and ask it 
 
 Only when the AskUserQuestion tool is unavailable, such as in a non-interactive run or a subagent, handle each open item without changing the UI or UX where possible, continue the work, and list the open decisions in your final report as a numbered list so the user can answer by referring to each number. Put one decision in each item, and number even a single item.
 
+## Prior Attempts
+
+Do not inspect development history or PR status out of habit. This covers commit logs, the reflog, other branches and their diffs, stashes, open or closed PRs and their review comments, and transcripts of earlier sessions. The user often retries a task to get a different approach, and reading an earlier attempt anchors the new work to the approach the user wanted to move away from.
+
+Base the work on the user's request, the current code on the base branch, and the repository's documentation. Look at history or PRs only when the user asks for it, or when the task itself is about them, such as writing a commit message, updating a PR the user pointed to, resolving a merge conflict, or tracking down a regression. If you believe the work cannot be done correctly without checking history, tell the user what you want to check and why before checking it. If you come across code from an earlier attempt anyway, do not reuse its approach unless the user asks for it.
+
 ## Output
 
 Write in complete sentences with a subject and a predicate, not strings of noun phrases. This applies inside bullet points and table cells too, even when it makes the text longer.
