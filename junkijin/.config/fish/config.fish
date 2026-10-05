@@ -3,8 +3,7 @@
 if status is-interactive
     set -gx SHELL (status fish-path)
     set -gx VISUAL nvim
-    abbr --add cx codex
-    abbr --add 'cx~' 'codex resume'
     abbr --add th treehouse
+    abbr --add cld claude
 end
 
