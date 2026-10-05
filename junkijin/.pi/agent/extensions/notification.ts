@@ -1,7 +1,7 @@
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 
-const TITLE = "Pi needs your attention";
-const PREVIEW_LENGTH = 30;
+const TITLE = "Pi";
+const BODY = "Pi needs your attention";
 
 export default function (pi: ExtensionAPI) {
 	pi.on("agent_settled", (_event, ctx) => {
@@ -13,14 +13,7 @@ export default function (pi: ExtensionAPI) {
 		const message = messages.findLast((message) => message.role === "assistant");
 		if (!message || message.stopReason === "aborted") return;
 
-		const text = message.content
-			.filter((part) => part.type === "text")
-			.map((part) => part.text)
-			.join("");
-		const chars = [...text.replace(/[\s\p{Cc}]+/gu, " ").trim()];
-		const body = chars.slice(0, PREVIEW_LENGTH).join("") + (chars.length > PREVIEW_LENGTH ? "..." : "");
-
-		let sequence = `\x1b]777;notify;${TITLE};${body}\x07`;
+		let sequence = `\x1b]777;notify;${TITLE};${BODY}\x07`;
 		// tmux does not forward OSC 777 by itself; wrap it for passthrough (needs allow-passthrough).
 		if (process.env.TMUX) sequence = `\x1bPtmux;${sequence.replaceAll("\x1b", "\x1b\x1b")}\x1b\\`;
 		process.stdout.write(sequence);
