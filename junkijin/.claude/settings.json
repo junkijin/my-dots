@@ -1,6 +1,8 @@
 {
   "syncClaudeAiSkills": false,
   "syncClaudeAiPlugins": false,
+  "disableClaudeAiConnectors": true,
+  "disableBundledSkills": true,
   "attribution": {
     "commit": "",
     "pr": "",
@@ -9,81 +11,46 @@
   "includeGitInstructions": false,
   "permissions": {
     "deny": [
+      "Glob",
+      "Grep",
+      "LSP",
+      "NotebookEdit",
       "Agent",
+      "Task",
+      "TodoWrite",
       "Artifact",
       "ArtifactComments",
       "ArtifactData",
+      "AskUserQuestion",
       "CronCreate",
       "CronDelete",
       "CronList",
       "DesignSync",
+      "EndConversation",
       "EnterPlanMode",
-      "EnterWorktree",
       "ExitPlanMode",
+      "EnterWorktree",
       "ExitWorktree",
-      "Glob",
-      "Grep",
       "ListAgents",
-      "ListMcpResourcesTool",
-      "LSP",
-      "NotebookEdit",
-      "PowerShell",
-      "ReadMcpResourceDirTool",
-      "ReadMcpResourceTool",
+      "PushNotification",
       "RemoteTrigger",
       "ReportFindings",
       "ScheduleWakeup",
       "SendFeedback",
       "SendMessage",
-      "SendUserFile",
-      "ShareOnboardingGuide",
-      "TaskCreate",
-      "TaskGet",
-      "TaskList",
-      "TaskOutput",
-      "TaskUpdate",
-      "TodoWrite",
-      "WaitForMcpServers",
       "Workflow"
     ],
     "defaultMode": "bypassPermissions"
   },
-  "disableClaudeAiConnectors": true,
-  "disableBundledSkills": true,
   "enableArtifact": false,
-  "statusLine": {
-    "type": "command",
-    "command": "bash \"$HOME/.claude/statusline-command.sh\""
-  },
-  "enabledPlugins": {
-    "skill-creator@claude-plugins-official": true,
-    "cc-plugin-telemetry@builtin": false
-  },
   "language": "한국어",
   "feedbackSurveyRate": 0,
   "feedbackDrafts": "off",
-  "modelSettings": {
-    "claude-opus-5-5": {
-      "effortLevel": "high"
-    }
-  },
   "promptSuggestionEnabled": false,
-  "awaySummaryEnabled": false,
-  "askUserQuestionTimeout": "never",
-  "pluginConfigs": {
-    "cc-plugin-agents-md@builtin": {
-      "options": {
-        "instructionFiles": "claude-md-or-agents-md"
-      }
-    }
-  },
   "tui": "fullscreen",
-  "autoMemoryEnabled": true,
+  "skipDangerousModePermissionPrompt": true,
   "theme": "auto",
   "editorMode": "normal",
-  "autoCompactEnabled": true,
-  "inputNeededNotifEnabled": true,
-  "agentPushNotifEnabled": true,
-  "useAutoModeDuringPlan": true,
-  "skipDangerousModePermissionPrompt": true
+  "preferredNotifChannel": "auto",
+  "terminalProgressBarEnabled": false
 }
