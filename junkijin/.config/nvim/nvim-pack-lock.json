@@ -1,5 +1,9 @@
 {
   "plugins": {
+    "backend-ghostty": {
+      "rev": "f45d7ca1b12378818d5164d550ca4b908b0323da",
+      "src": "https://github.com/smart-splits-nvim/backend-ghostty"
+    },
     "blink.cmp": {
       "rev": "78336bc89ee5365633bcf754d93df01678b5c08f",
       "src": "https://github.com/saghen/blink.cmp",
@@ -62,8 +66,9 @@
       "src": "https://github.com/folke/persistence.nvim"
     },
     "smart-splits.nvim": {
-      "rev": "89ab35b282783efc1c49deadd72c22afd5eac356",
-      "src": "https://github.com/mrjones2014/smart-splits.nvim"
+      "rev": "5fd4fe53c2df2009e689f61511e3c474a9eccbaf",
+      "src": "https://github.com/smart-splits-nvim/smart-splits.nvim",
+      "version": "3.0.0 - 4.0.0"
     },
     "targets.vim": {
       "rev": "6325416da8f89992b005db3e4517aaef0242602e",
