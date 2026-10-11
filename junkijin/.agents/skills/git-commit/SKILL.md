@@ -1,77 +1,164 @@
 ---
 name: git-commit
-description: Review Git changes, organize atomic commits, write commit messages that follow repository conventions, and create authorized commits. Use for commit creation, commit message drafting or improvement, staged diff review, or planning logical commit boundaries. Do not use for general implementation, code review, or branch, push, PR, or history management alone.
+description: Gives a procedure to examine Git changes, set commit boundaries, stage and check the permitted changes, write a commit message from the diff, and make the commit. Use it to make commits, write commit messages, examine staged diffs, or plan commit boundaries, but not for implementation, code review, or only branch, push, pull request, or history operations.
 ---
 
 # Git commit
 
-Create commits that are easy to understand, verify, and revert. Review the actual contents before writing the message.
+## 1. Purpose
 
-## 1. Establish scope and conventions
+This skill gives the procedure to make Git commits. Each commit must be easy to understand, test, and revert. Examine the changes before you write the commit message.
 
-- For message-only or review requests, do not modify files, the index, or history. Stage and commit only when authorized; do not request the same approval again.
-- Follow the user's scope and repository instructions. Inspect relevant `AGENTS.md`, `CONTRIBUTING`, commit templates, and commitlint or hook configuration. Use recent commits as secondary evidence of conventions.
-- Follow the repository's message language, type and scope, length, footer, and signing requirements. Do not impose Conventional Commits, a 50-character limit, capitalization, or mandatory bodies universally.
-- Preserve user work and existing staged changes. If unrelated changes are already staged, clarify the commit scope rather than including or unstaging them without authorization.
-- A commit request does not authorize push, amend, rebase, squash, reset, clean, or deletion. Do not hide existing work with an automatic stash or bypass hooks.
+## 2. Terms
 
-## 2. Inspect changes and define commit boundaries
+- **Commit scope**: The set of changes that the user tells you to commit.
+- **Permission**: A clear instruction from the user to do a specified operation.
+- **Index snapshot**: The exact contents of the staging area.
+- **Repository rules**: The commit rules in the repository files. Examples are `AGENTS.md`, `CONTRIBUTING`, commit templates, commitlint configuration, and hook configuration.
 
-```bash
-git status --short
-git diff
-git diff --staged
-git log -10 --format=%s
-```
+## 3. Request types and permissions
 
-Read relevant untracked files separately; they do not appear in `git diff`. If output is truncated, inspect by path until the full relevant diff has been reviewed.
+Identify the request type before you start.
 
-Group changes by purpose, not file count or extension:
+| Request type | Permitted operations |
+| --- | --- |
+| Commit message only | Read operations only |
+| Review or split plan | Read operations only |
+| Commit creation | Stage and commit the commit scope |
 
-- Keep a bug fix, its regression tests, and related documentation together.
-- Separate unrelated fixes, broad formatting, behavior-preserving refactoring, and behavior changes.
-- Include required dependencies, configuration, lockfiles, and intentionally tracked generated files.
-- Describe each commit in one sentence. If reverting it would also undo unrelated work, reconsider its boundaries.
-- Dependent commits are valid, but each step must remain coherent and verifiable in order. Briefly outline boundaries and dependency order when multiple commits are needed.
+1. If the request is for a message or a review, do not change files, the index, or the history.
+2. If the user gives permission to commit, stage and commit the changes. Do not ask for the same permission again.
+3. Obey the commit scope and the repository rules.
 
-## 3. Stage and validate the intended contents
+CAUTION: A commit request does not give permission for push, amend, rebase, squash, reset, clean, or delete operations. Do not do these operations without a separate permission. If you do, you can cause loss of user work.
 
-For authorized commit creation, add explicit paths and use hunk-level staging for mixed changes. Do not use unreviewed `git add .`, `git add -A`, or `git commit -a`.
+## 4. Procedure
 
-```bash
-# Replace placeholders with reviewed target paths.
-git add -p -- path/to/tracked-file
-git add -- path/to/new-file
-git diff --staged
-git diff --staged --check
-```
+### 4.1 Find the repository rules
 
-In non-interactive environments, a reviewed patch containing only authorized hunks may be applied with `git apply --cached`. Do not overwrite working files to arrange staging.
+1. Read the repository rules.
+2. Read the subjects of the last 10 commits. Use them only as secondary data about the conventions.
+3. Use the repository rules for the message language, type, scope, length, footer, and signature.
+4. If the repository has no rule for an item, do not add a rule. For example, do not apply Conventional Commits, a 50-character limit, capital letters, or a mandatory body.
 
-Review the entire staged diff for missing required changes, unrelated edits, debug output, temporary files, personal settings, and sensitive data. If secrets are present, stop and report their location without revealing values. Already exposed credentials require revocation or rotation; a deletion commit or `.gitignore` is not a remedy. Do not change external credentials without authorization.
+### 4.2 Examine the changes
 
-Run the build, tests, lint, and secret checks required for the change. `git diff --staged --check` detects whitespace errors and conflict markers, not functional defects or secrets. Check for regression coverage when fixing bugs; do not expand a message or review request into code changes.
+1. Run these commands:
 
-**Working-directory tests do not prove that a partially staged snapshot passes.** Where feasible, validate the exact index snapshot in a separate temporary environment with the required dependencies. Verify each intermediate state when splitting commits. Report unavailable checks and distinguish working-directory validation from staged-snapshot validation.
+   ```bash
+   git status --short
+   git diff
+   git diff --staged
+   git log -10 --format=%s
+   ```
 
-If a check or hook modifies files, review the changes, stage only authorized content, and rerun affected checks. Resolve failures before committing; do not claim unperformed checks passed.
+2. Read the related untracked files. The `git diff` command does not show untracked files.
+3. If the output is truncated, examine each path separately. Continue until you read the full diff for the commit scope.
 
-## 4. Write a message grounded in the diff
+CAUTION: Keep the user work and the changes that are already staged. Do not use an automatic stash. If unrelated changes are already staged, ask the user about the commit scope. Do not commit or unstage these changes without permission.
 
-Write a concise, specific subject describing the resulting change, not a work log such as `update code` or `address review feedback`. Use imperative wording as an English default and natural, consistent phrasing in other languages.
+### 4.3 Set the commit boundaries
 
-For non-obvious changes, leave a blank line after the subject and explain the relevant context:
+Put the changes into groups by purpose. Do not use the number of files or the file extensions to make the groups.
 
-- What was wrong and what changes now
-- Why this approach was chosen, including important alternatives or constraints
-- Compatibility impact, side effects, or remaining limitations
-- Validation actually performed and its results, when useful
+1. Put a bug fix, its regression tests, and its related documentation in one commit.
+2. Put each of these changes in a separate commit:
+   - Unrelated fixes
+   - Large format changes
+   - Refactors that do not change behavior
+   - Changes in behavior
+3. Add the necessary dependencies, configuration, lockfiles, and generated files that the repository tracks.
+4. Write one sentence that describes each commit. If you cannot write this sentence, change the boundaries.
+5. If a revert of a commit also removes unrelated work, change the boundaries.
+6. If you make more than one commit, give the user a short list of the boundaries and their sequence.
 
-Do not paraphrase obvious code or rely on an issue link for the essential explanation. Never invent rationale, issue numbers, performance measurements, or test results. Ask only when necessary context cannot be established. A subject alone may suffice for a trivial change.
+NOTE: A commit can depend on an earlier commit. Each commit in the sequence must be correct and testable.
 
-If the repository uses Conventional Commits, follow `type(scope): description` with an optional scope. Use `feat` for features and `fix` for bug fixes; choose other types by repository convention and purpose, not file extension. A fix and its regression tests may share one `fix` commit. Do not label behavior changes as `refactor`. Mark breaking changes with `!` or `BREAKING CHANGE:` and explain the impact.
+### 4.4 Stage the changes
 
-Fictional example; adapt to the actual diff and repository conventions:
+Do this step only if you have permission to commit.
+
+1. Stage each path by its name. If a file has mixed changes, stage only the applicable hunks.
+
+   ```bash
+   # Replace the placeholders with the paths that you examined.
+   git add -p -- path/to/tracked-file
+   git add -- path/to/new-file
+   ```
+
+2. If the environment is not interactive, make a patch that has only the permitted hunks. Examine the patch. Then apply the patch with `git apply --cached`.
+3. Do not change the working files to make the staging easier.
+
+CAUTION: Do not use `git add .`, `git add -A`, or `git commit -a` if you did not examine all of the changes. These commands can add unrelated changes or sensitive data to the commit.
+
+### 4.5 Examine the staged changes
+
+1. Run `git diff --staged`. Read all of the staged diff.
+2. Make sure that the staged diff has all of the necessary changes.
+3. Make sure that the staged diff does not have these items:
+   - Unrelated changes
+   - Debug output
+   - Temporary files
+   - Personal settings
+   - Sensitive data
+
+CAUTION: If you find a secret, stop the procedure. Tell the user the location of the secret. Do not show the secret value.
+
+NOTE: A commit that deletes a secret does not make the secret safe. A `.gitignore` entry also does not make the secret safe. The owner must revoke or rotate an exposed credential. Do not change external credentials without permission.
+
+### 4.6 Do the checks
+
+1. Run the build, tests, lint, and secret checks that the change needs.
+2. Run `git diff --staged --check`.
+
+   NOTE: This command finds only whitespace errors and conflict markers. It does not find functional errors or secrets.
+
+3. If the change is a bug fix, make sure that a regression test exists.
+4. If the request is for a message or a review, do not change the code.
+5. If a check or a hook changes files, examine the changes. Stage only the permitted changes. Then do the related checks again.
+6. If a check fails, correct the cause before you commit.
+
+CAUTION: A test in the working directory does not show that a partially staged snapshot is correct. If possible, test the exact index snapshot in a separate temporary environment. Install the necessary dependencies in that environment. If you split the changes into more than one commit, test each intermediate state.
+
+7. Tell the user which checks you could not do.
+8. Tell the user if you tested the working directory or the index snapshot.
+
+CAUTION: Do not say that a check passed if you did not do that check.
+
+### 4.7 Write the commit message
+
+#### 4.7.1 Subject
+
+1. Write a short and specific subject. The subject must describe the result of the change.
+2. Do not write a work log, for example `update code` or `address review feedback`.
+3. In English, use the imperative form. In other languages, use natural and consistent words.
+
+#### 4.7.2 Body
+
+1. If the change is not obvious, add a blank line after the subject. Then write a body.
+2. Write only the necessary information in the body:
+   - The problem and the change
+   - The reason for the solution, with important alternatives or limits
+   - The effect on compatibility, the side effects, and the limits that stay
+   - The checks that you did and their results, if this data is useful
+3. Do not repeat the information that the code clearly shows.
+4. Do not use only an issue link for the main explanation.
+5. For a trivial change, you can write a subject without a body.
+
+CAUTION: Do not invent reasons, issue numbers, performance values, or test results. Ask the user only if you cannot find the necessary information.
+
+#### 4.7.3 Conventional Commits
+
+Use these rules only if the repository uses Conventional Commits:
+
+1. Use the format `type(scope): description`. The scope is optional.
+2. Use `feat` for a new feature. Use `fix` for a bug fix.
+3. For other types, use the repository convention and the purpose of the change. Do not use the file extension to select the type.
+4. You can put a fix and its regression tests in one `fix` commit.
+5. Do not use `refactor` for a change in behavior.
+6. For a breaking change, add `!` or a `BREAKING CHANGE:` footer. Explain the effect of the change.
+
+Example:
 
 ```text
 fix(payments): retry only with idempotency keys
@@ -81,12 +168,34 @@ to duplicate a charge. Disable retries for requests without an
 idempotency key while preserving the retry policy for keyed requests.
 ```
 
-## 5. Commit and report
+NOTE: This example is fictional. Change it to agree with the diff and the repository rules.
 
-Before an authorized commit, confirm that the staged contents, logical purpose, message, and validation results agree. If nothing is staged, do not create an empty commit unless explicitly requested.
+### 4.8 Make the commit
 
-Follow the repository's signing policy. `git commit -s` adds a `Signed-off-by` attestation; `git commit -S` creates a cryptographic signature. Do not substitute one for the other or attest to contribution rights without confirmation.
+1. Make sure that the staged changes, the purpose, the message, and the check results agree.
+2. If no changes are staged, do not make an empty commit. Make an empty commit only if the user tells you to do so.
+3. Obey the signature rules of the repository:
+   - `git commit -s` adds a `Signed-off-by` line. This line is a statement about contribution rights.
+   - `git commit -S` adds a cryptographic signature.
+   - Do not use one option as a replacement for the other option.
+   - Do not use `-s` before the user confirms the contribution rights.
+4. Do not use `--no-verify`. The hooks must run.
+5. Make the commit.
+6. Run these commands to examine the result:
 
-After committing, inspect `git log -1 --format=fuller --stat` and `git status --short` to confirm the result and remaining changes. Do not automatically amend an unexpected result.
+   ```bash
+   git log -1 --format=fuller --stat
+   git status --short
+   ```
 
-For message requests, return a ready-to-use message. For reviews or split plans, report issues and recommended boundaries. For completed commits, briefly report the hash, subject, check results, and any remaining changes or validation gaps.
+7. If the result is not correct, do not amend the commit automatically. Tell the user about the problem.
+
+## 5. Report
+
+Give the output that agrees with the request type:
+
+| Request type | Output |
+| --- | --- |
+| Commit message only | A commit message that is ready to use |
+| Review or split plan | The problems and the recommended commit boundaries |
+| Commit creation | The hash, the subject, the check results, the changes that are not committed, and the checks that you did not do |
