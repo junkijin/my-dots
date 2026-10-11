@@ -49,7 +49,24 @@ keybind = cmd+8=goto_tab:8
 keybind = cmd+9=goto_tab:9
 keybind = cmd+0=goto_tab:0
 
-keybind = cmd+h=goto_split:left
-keybind = cmd+j=goto_split:down
-keybind = cmd+k=goto_split:up
-keybind = cmd+l=goto_split:right
+# smart-splits.nvim (backend-ghostty)
+# Outside Neovim
+keybind = performable:ctrl+h=goto_split:left
+keybind = performable:ctrl+j=goto_split:down
+keybind = performable:ctrl+k=goto_split:up
+keybind = performable:ctrl+l=goto_split:right
+keybind = performable:alt+h=resize_split:left,30
+keybind = performable:alt+j=resize_split:down,30
+keybind = performable:alt+k=resize_split:up,30
+keybind = performable:alt+l=resize_split:right,30
+
+# Inside Neovim (key table claimed by backend-ghostty)
+keybind = nvim/
+keybind = nvim/ctrl+h=text:\x08
+keybind = nvim/ctrl+j=text:\x0a
+keybind = nvim/ctrl+k=text:\x0b
+keybind = nvim/ctrl+l=text:\x0c
+keybind = nvim/alt+h=esc:h
+keybind = nvim/alt+j=esc:j
+keybind = nvim/alt+k=esc:k
+keybind = nvim/alt+l=esc:l
