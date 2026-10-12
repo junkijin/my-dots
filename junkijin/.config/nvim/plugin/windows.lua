@@ -1,8 +1,5 @@
 vim.pack.add({
-  {
-    src = "https://github.com/smart-splits-nvim/smart-splits.nvim",
-    version = vim.version.range("3"),
-  },
+  "https://github.com/smart-splits-nvim/smart-splits.nvim",
   "https://github.com/smart-splits-nvim/backend-ghostty",
 }, { confirm = false })
 
