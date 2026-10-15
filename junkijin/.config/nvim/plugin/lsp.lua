@@ -21,10 +21,6 @@ vim.lsp.enable({
 	"zls",
 })
 
-local ignored_lsp_progress_clients = {
-	["null-ls"] = true,
-}
-
 local native_lsp_progress_group = vim.api.nvim_create_augroup("NativeLspProgress", { clear = true })
 
 vim.api.nvim_create_autocmd("LspProgress", {
@@ -32,7 +28,7 @@ vim.api.nvim_create_autocmd("LspProgress", {
 	callback = function(event)
 		local data = event.data or {}
 		local client = data.client_id and vim.lsp.get_client_by_id(data.client_id)
-		if not client or ignored_lsp_progress_clients[client.name] then
+		if not client then
 			return
 		end
 
