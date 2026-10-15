@@ -18,6 +18,7 @@ vim.lsp.enable({
 	"oxlint",
 	"tailwindcss",
 	"vtsls",
+	"zls",
 })
 
 local ignored_lsp_progress_clients = {

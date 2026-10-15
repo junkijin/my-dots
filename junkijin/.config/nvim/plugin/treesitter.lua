@@ -33,6 +33,7 @@ local parsers = {
 	"vim",
 	"vimdoc",
 	"yaml",
+	"zig",
 }
 
 require('nvim-treesitter').install(parsers)

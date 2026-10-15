@@ -80,10 +80,6 @@
     "vim-repeat": {
       "rev": "65846025c15494983dafe5e3b46c8f88ab2e9635",
       "src": "https://github.com/tpope/vim-repeat"
-    },
-    "zig.vim": {
-      "rev": "4842ab8cb1b000a9acb0a06170d404d12a154918",
-      "src": "https://codeberg.org/ziglang/zig.vim.git"
     }
   }
 }
