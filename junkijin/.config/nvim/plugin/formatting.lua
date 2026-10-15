@@ -6,6 +6,7 @@ local oxfmt_config_files = {
 	".oxfmtrc.json",
 	".oxfmtrc.jsonc",
 	"oxfmt.config.ts",
+	"oxfmt.config.mts",
 }
 
 vim.o.formatexpr = "v:lua.require'conform'.formatexpr()"
@@ -27,7 +28,6 @@ require("conform").setup({
 	formatters = {
 		oxfmt = {
 			condition = util.root_file(oxfmt_config_files),
-			cwd = util.root_file(oxfmt_config_files),
 		},
 		prettier = {
 			condition = util.root_file({
