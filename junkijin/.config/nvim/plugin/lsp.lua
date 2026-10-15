@@ -4,15 +4,8 @@ vim.diagnostic.config({
 	signs = false,
 })
 
--- Semantic tokens land at priority 125 against treesitter's 100, and the
--- `@lsp.type.*` groups link to the treesitter ones by default, so the server's
--- guess wins over the parse tree everywhere the two disagree. The switch is
--- read when a client attaches (:h lsp-semantic_tokens), hence it covers servers
--- started later and skips the requests altogether.
 vim.lsp.semantic_tokens.enable(false)
 
--- Base configs come from nvim-lspconfig's `lsp/`; per-server overrides live in
--- `after/lsp/` so they are merged last (:h lsp-config).
 vim.lsp.enable({
 	"eslint",
 	"oxlint",
@@ -21,10 +14,8 @@ vim.lsp.enable({
 	"zls",
 })
 
-local native_lsp_progress_group = vim.api.nvim_create_augroup("NativeLspProgress", { clear = true })
-
 vim.api.nvim_create_autocmd("LspProgress", {
-	group = native_lsp_progress_group,
+	group = vim.api.nvim_create_augroup("MyLspProgress", { clear = true }),
 	callback = function(event)
 		local data = event.data or {}
 		local client = data.client_id and vim.lsp.get_client_by_id(data.client_id)

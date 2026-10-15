@@ -1,17 +1,8 @@
 vim.pack.add({ "https://github.com/stevearc/conform.nvim" }, { confirm = false })
 
-local util = require("conform.util")
-
-local oxfmt_config_files = {
-	".oxfmtrc.json",
-	".oxfmtrc.jsonc",
-	"oxfmt.config.ts",
-	"oxfmt.config.mts",
-}
-
 vim.o.formatexpr = "v:lua.require'conform'.formatexpr()"
 vim.api.nvim_create_autocmd("BufWritePre", {
-	group = vim.api.nvim_create_augroup("my.conform", {}),
+	group = vim.api.nvim_create_augroup("MyConform", {}),
 	callback = function(evt)
 		require("conform").format({ bufnr = evt.buf })
 	end,
@@ -27,10 +18,15 @@ require("conform").setup({
 	},
 	formatters = {
 		oxfmt = {
-			condition = util.root_file(oxfmt_config_files),
+			condition = require("conform.util").root_file({
+				".oxfmtrc.json",
+				".oxfmtrc.jsonc",
+				"oxfmt.config.ts",
+				"oxfmt.config.mts",
+			}),
 		},
 		prettier = {
-			condition = util.root_file({
+			condition = require("conform.util").root_file({
 				".prettierrc",
 				".prettierrc.json",
 				".prettierrc.yml",

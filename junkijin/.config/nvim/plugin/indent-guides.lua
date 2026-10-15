@@ -16,7 +16,7 @@ end
 update_listchars()
 
 vim.api.nvim_create_autocmd({ "BufEnter", "OptionSet" }, {
-	group = vim.api.nvim_create_augroup("listchars_indent_guides", { clear = true }),
+	group = vim.api.nvim_create_augroup("MyIndentGuide", { clear = true }),
 	callback = function(event)
 		if event.event == "OptionSet" and event.match ~= "tabstop" then
 			return

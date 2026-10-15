@@ -3,7 +3,6 @@ vim.pack.add({
   "https://github.com/smart-splits-nvim/backend-ghostty",
 }, { confirm = false })
 
--- The backend must be configured before smart-splits selects it.
 require("smart-splits-backend-ghostty").setup({})
 require("smart-splits").setup({
   mux = { backend = "smart-splits-backend-ghostty" },
