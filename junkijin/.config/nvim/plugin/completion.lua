@@ -26,6 +26,17 @@ require("blink.cmp").setup({
 				auto_insert = false,
 			},
 		},
+		menu = {
+			draw = {
+				components = {
+					label = {
+						text = function(ctx)
+							return ctx.label
+						end,
+					},
+				},
+			},
+		},
 	},
 	sources = {
 		default = { "lsp", "snippets" },
