@@ -26,9 +26,6 @@ require("blink.cmp").setup({
 				auto_insert = false,
 			},
 		},
-		documentation = {
-			treesitter_highlighting = false,
-		},
 	},
 	sources = {
 		default = { "lsp", "snippets" },
