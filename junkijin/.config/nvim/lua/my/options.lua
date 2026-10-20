@@ -21,3 +21,5 @@ vim.opt.pumheight = 10
 vim.opt.splitright = true
 vim.opt.title = true
 vim.opt.titlestring = '%t%( %M%)%( (%{expand("%:~:.:h")})%)'
+vim.opt.foldlevel = 99
+vim.opt.foldlevelstart = 99
